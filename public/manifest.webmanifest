@@ -1,0 +1,12 @@
+{
+  "name": "Kingston GameZone",
+  "short_name": "Kingston",
+  "description": "Caisse et gestion de salle de gaming — multi-salles, offline-first",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0614",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }
+  ]
+}

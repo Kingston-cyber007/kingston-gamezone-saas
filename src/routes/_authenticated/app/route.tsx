@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useLocation, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useLocation, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import "@/kingston/kingston.css";
 import { useStore } from "@/kingston/store/useStore";
@@ -37,6 +37,28 @@ function AppShell() {
       navigate({ to: "/" });
     }
   }, [accessLoading, staffTenants.length, isPlatformAdmin, navigate]);
+
+  // Realtime — écoute les changements caisse pour synchroniser plusieurs postes
+  useEffect(() => {
+    if (!activeTenant?.id) return;
+    const channel = supabase
+      .channel(`caisse-${activeTenant.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "sessions_caisse", filter: `tenant_id=eq.${activeTenant.id}` },
+        (payload) => {
+          const row = payload.new as { amount?: number; poste_name?: string };
+          showToast(`💰 Nouvelle vente ${row.poste_name ?? ""} — ${fmtMoney(row.amount ?? 0)}`);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "postes", filter: `tenant_id=eq.${activeTenant.id}` },
+        () => { /* poste status changed elsewhere */ },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeTenant?.id]);
 
   const today = todayKey();
   const todaySessions = sessions.filter((s) => s.day === today);

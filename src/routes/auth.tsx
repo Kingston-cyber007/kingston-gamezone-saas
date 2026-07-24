@@ -100,6 +100,12 @@ function AuthPage() {
           <p className="text-sm text-gray-400 mt-1">Plateforme SaaS multi-salles</p>
         </div>
 
+        {inviteEmail && (
+          <div className="mb-4 rounded-lg bg-purple-500/10 border border-purple-500/30 px-3 py-2 text-sm text-purple-200">
+            🎟️ Invitation détectée pour <strong>{inviteEmail}</strong>. Créez votre compte pour rejoindre la salle.
+          </div>
+        )}
+
         <button
           onClick={handleGoogle}
           className="w-full flex items-center justify-center gap-3 rounded-lg bg-white text-gray-900 py-2.5 font-medium hover:bg-gray-100 transition mb-4"

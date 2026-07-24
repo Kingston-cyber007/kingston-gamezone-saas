@@ -25,11 +25,26 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/" });
     });
+    // Check invite token in URL
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("invite");
+      if (token) {
+        supabase.from("tenant_invitations").select("email").eq("token", token).maybeSingle().then(({ data }) => {
+          if (data?.email) {
+            setInviteEmail(data.email);
+            setEmail(data.email);
+            setMode("signup");
+          }
+        });
+      }
+    }
   }, [navigate]);
 
   async function handleEmail(e: React.FormEvent) {

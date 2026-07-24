@@ -33,28 +33,28 @@ function Landing() {
   }, [loading, accessLoading, user, isPlatformAdmin, isClient, staffTenants.length, navigate]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,#1a0f2e,#0a0614)] text-white">
-      <header className="max-w-6xl mx-auto flex items-center justify-between p-6">
-        <img src={logoAsset.url} alt="Kingston GameZone" className="h-14" />
-        <nav className="flex gap-3">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[radial-gradient(ellipse_at_top,#1a0f2e,#0a0614)] text-white">
+      <header className="w-full max-w-6xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-6 flex-wrap">
+        <img src={logoAsset.url} alt="Kingston GameZone" className="h-10 sm:h-14 shrink-0" />
+        <nav className="flex gap-2 sm:gap-3 flex-wrap justify-end">
           {user ? (
             <>
-              {staffTenants.length > 0 && <Link to="/app/salle" className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500">Caisse</Link>}
-              {isClient && <Link to="/client" className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500">Mon espace</Link>}
-              {isPlatformAdmin && <Link to="/platform" className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500">Plateforme</Link>}
+              {staffTenants.length > 0 && <Link to="/app/salle" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-purple-600 hover:bg-purple-500">Caisse</Link>}
+              {isClient && <Link to="/client" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-cyan-600 hover:bg-cyan-500">Mon espace</Link>}
+              {isPlatformAdmin && <Link to="/platform" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-500">Plateforme</Link>}
             </>
           ) : (
-            <Link to="/auth" className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90">Connexion</Link>
+            <Link to="/auth" className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90">Connexion</Link>
           )}
         </nav>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-16">
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         <section className="text-center max-w-3xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-black leading-tight bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black leading-tight bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
             La caisse gaming pour l'Afrique
           </h1>
-          <p className="mt-6 text-lg text-gray-300">
+          <p className="mt-5 sm:mt-6 text-base sm:text-lg text-gray-300 px-2">
             Gérez vos postes, tickets, sessions et paiements Mobile Money — même hors connexion.
             Multi-salles, rôles fins, statistiques temps réel.
           </p>

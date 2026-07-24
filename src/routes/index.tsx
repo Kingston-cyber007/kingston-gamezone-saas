@@ -70,7 +70,7 @@ function Landing() {
           </div>
         </section>
 
-        <section className="grid md:grid-cols-3 gap-6 mt-20">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-14 sm:mt-20">
           {[
             { icon: "🎮", title: "Sessions & postes", body: "Suivi temps réel, alertes sonores et vocales, pause/reprise." },
             { icon: "🎫", title: "Tickets & fidélité", body: "QR codes, scanner caméra, temps sauvegardé, points de fidélité." },
@@ -79,7 +79,7 @@ function Landing() {
             { icon: "🌐", title: "Offline-first", body: "L'app tourne sans internet ; sync automatique dès la reconnexion." },
             { icon: "🏢", title: "Multi-salles", body: "Consolidez plusieurs points de vente sous un même compte." },
           ].map((c) => (
-            <div key={c.title} className="rounded-2xl bg-black/40 border border-purple-500/20 p-6 hover:border-purple-400/40 transition">
+            <div key={c.title} className="rounded-2xl bg-black/40 border border-purple-500/20 p-5 sm:p-6 hover:border-purple-400/40 transition">
               <div className="text-3xl">{c.icon}</div>
               <h3 className="mt-3 font-bold text-lg">{c.title}</h3>
               <p className="mt-2 text-sm text-gray-400">{c.body}</p>

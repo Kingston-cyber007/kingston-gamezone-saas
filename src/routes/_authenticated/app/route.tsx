@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useLocation, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useLocation, Link } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import "@/kingston/kingston.css";
 import { useStore } from "@/kingston/store/useStore";

@@ -14,30 +14,63 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ticket Kingston Gaming — ${ticket.code}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+  @page { size: A4; margin: 12mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; padding: 20px; }
-  .ticket { max-width: 400px; margin: 0 auto; border: 2px solid #E8A33D; border-radius: 16px; overflow: hidden; }
-  .ticket-header { background: #11141A; color: white; padding: 20px 24px; text-align: center; }
-  .kg-logo { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 700; color: #E8A33D; }
-  .kg-sub { font-size: 12px; color: #9098A8; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
-  .ticket-body { padding: 24px; }
-  .ticket-code-box { background: #11141A; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 20px; }
-  .ticket-code-label { font-size: 10px; color: #9098A8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-  .ticket-code { font-family: 'Oswald', sans-serif; font-size: 36px; font-weight: 700; color: #E8A33D; letter-spacing: 6px; }
-  .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
-  .info-row:last-child { border-bottom: none; }
-  .info-label { color: #666; }
-  .info-value { font-weight: 600; }
-  .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background: ${valid ? '#dcfce7' : '#fee2e2'}; color: ${valid ? '#166534' : '#991b1b'}; margin-top: 12px; }
+  html, body { width: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .ticket {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    background: #fff;
+    border: 2px solid #E8A33D;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .ticket-header { background: #11141A; color: #fff; padding: 20px 24px; text-align: center; }
+  .kg-logo { font-family: 'Oswald', 'Impact', sans-serif; font-size: 28px; font-weight: 700; color: #E8A33D; letter-spacing: 1px; }
+  .kg-sub { font-size: 11px; color: #9098A8; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+  .ticket-body { padding: 20px 22px; }
+  .ticket-code-box { background: #11141A; border-radius: 12px; padding: 14px 12px; text-align: center; margin-bottom: 18px; }
+  .ticket-code-label { font-size: 10px; color: #9098A8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+  .ticket-code { font-family: 'Oswald', 'Impact', sans-serif; font-size: 30px; font-weight: 700; color: #E8A33D; letter-spacing: 4px; word-break: break-all; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+  .info-row:last-of-type { border-bottom: none; }
+  .info-label { color: #666; flex-shrink: 0; }
+  .info-value { font-weight: 600; text-align: right; word-break: break-word; }
+  .status-wrap { text-align: center; margin-top: 14px; }
+  .status-badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background: ${valid ? '#dcfce7' : '#fee2e2'}; color: ${valid ? '#166534' : '#991b1b'}; }
   .sessions-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
-  .sessions-title { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  .session-row { font-size: 11px; color: #444; padding: 4px 0; display: flex; justify-content: space-between; }
+  .sessions-title { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; }
+  .session-row { display: grid; grid-template-columns: 1.4fr 1fr 0.9fr 1fr; gap: 6px; font-size: 11px; color: #444; padding: 5px 0; border-bottom: 1px dotted #eee; }
+  .session-row:last-child { border-bottom: none; }
+  .session-row span:nth-child(3), .session-row span:nth-child(4) { text-align: right; }
+  .remaining-box { background: #fff7ed; border: 1px solid #E8A33D; border-radius: 8px; padding: 12px; margin-top: 12px; text-align: center; font-size: 13px; font-weight: 600; color: #92400e; }
   .footer { text-align: center; font-size: 10px; color: #999; padding: 12px 24px; background: #f9f9f9; border-top: 1px dashed #ddd; }
-  ${ticket.savedRemainingMs ? '.remaining-box { background: #fff7ed; border: 1px solid #E8A33D; border-radius: 8px; padding: 12px; margin-top: 12px; text-align: center; font-size: 13px; font-weight: 600; color: #92400e; }' : ''}
-  @media print { body { padding: 0; } }
+  @media print {
+    body { background: #fff; padding: 0; display: block; }
+    .ticket { box-shadow: none; margin: 0 auto; page-break-inside: avoid; }
+  }
+  @media screen and (max-width: 420px) {
+    body { padding: 12px 8px; }
+    .ticket-body { padding: 16px; }
+    .ticket-code { font-size: 26px; letter-spacing: 3px; }
+  }
 </style>
 </head>
 <body>
@@ -58,7 +91,7 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
     <div class="info-row"><span class="info-label">Sessions</span><span class="info-value">${ticket.sessionIds.length} session(s)</span></div>
     <div class="info-row"><span class="info-label">Temps joué</span><span class="info-value">${fmtDuration(ticket.totalMinutesPlayed)}</span></div>
     <div class="info-row"><span class="info-label">Montant total</span><span class="info-value">${fmtMoney(ticket.totalAmount)}</span></div>
-    <div style="text-align:center;margin-top:12px"><span class="status-badge">${valid ? '✅ Valide' : '❌ Expiré'}</span></div>
+    <div class="status-wrap"><span class="status-badge">${valid ? '✅ Valide' : '❌ Expiré'}</span></div>
     ${ticket.savedRemainingMs && !ticket.usedSavedTime ? `
     <div class="remaining-box">
       ⏳ Temps restant sauvegardé : ${fmtMs(ticket.savedRemainingMs)}
@@ -79,11 +112,12 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
   </div>
   <div class="footer">Kingston Gaming · Ticket confidentiel · Conservez ce document</div>
 </div>
-<script>window.onload = function() { window.print(); }</script>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 250); }</script>
 </body>
 </html>`;
   const win = window.open('', '_blank');
   if (win) {
+    win.document.open();
     win.document.write(html);
     win.document.close();
   }

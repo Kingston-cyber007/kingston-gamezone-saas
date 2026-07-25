@@ -1396,16 +1396,19 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== QR CODE IN FICHE TICKET ===== */
 .fiche-qr {
-  margin-top: 8px;
+  margin: 8px auto 0;
+  width: 80px;
+  height: 80px;
   display: flex;
-  justify-content: center;
-}
-.fiche-code-block {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  background: #fff;
+  padding: 4px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
+.fiche-qr > svg { width: 72px !important; height: 72px !important; display: block; }
 
 /* ===== QR SCANNER MODAL ===== */
 .scanner-modal {

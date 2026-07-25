@@ -353,7 +353,7 @@ function TicketDetailModal({ ticket, sessions, onClose, onPrint }: {
             <div className="fiche-code-label">Code</div>
             <div className="fiche-code">{ticket.code}</div>
             <div className="fiche-qr">
-              <QRCode value={ticket.code} size={72} style={{ background: 'white', padding: 4, borderRadius: 6, display: 'block' }} />
+              <QRCode value={ticket.code} size={72} />
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>

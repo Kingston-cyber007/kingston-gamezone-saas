@@ -490,6 +490,7 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center;
 }
 .modal-close:hover { background: rgba(255,92,92,0.15); color: var(--red); border-color: var(--red); }
+.fiche-header > .modal-close { position: absolute; top: 14px; right: 14px; }
 
 .field-section { margin-bottom: 18px; }
 .field-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }

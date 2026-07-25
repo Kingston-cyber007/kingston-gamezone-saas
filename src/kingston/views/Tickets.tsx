@@ -42,13 +42,13 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
     overflow: hidden;
     box-shadow: 0 4px 24px rgba(0,0,0,0.08);
   }
-  .ticket-header { background: #11141A; color: #fff; padding: 20px 24px; text-align: center; }
-  .kg-logo { font-family: 'Oswald', 'Impact', sans-serif; font-size: 28px; font-weight: 700; color: #E8A33D; letter-spacing: 1px; }
-  .kg-sub { font-size: 11px; color: #9098A8; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+  .ticket-header { background: #11141A; color: #fff; padding: 20px 24px; text-align: center; min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .kg-logo { font-family: 'Oswald', 'Impact', sans-serif; font-size: 26px; font-weight: 700; color: #E8A33D; letter-spacing: 1px; line-height: 1.1; white-space: nowrap; }
+  .kg-sub { font-size: 11px; color: #9098A8; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
   .ticket-body { padding: 20px 22px; }
-  .ticket-code-box { background: #11141A; border-radius: 12px; padding: 14px 12px; text-align: center; margin-bottom: 18px; }
+  .ticket-code-box { background: #11141A; border-radius: 12px; padding: 14px 12px; text-align: center; margin-bottom: 18px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
   .ticket-code-label { font-size: 10px; color: #9098A8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
-  .ticket-code { font-family: 'Oswald', 'Impact', sans-serif; font-size: 30px; font-weight: 700; color: #E8A33D; letter-spacing: 4px; word-break: break-all; }
+  .ticket-code { font-family: 'Oswald', 'Impact', sans-serif; font-size: 28px; font-weight: 700; color: #E8A33D; letter-spacing: 4px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .info-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
   .info-row:last-of-type { border-bottom: none; }
   .info-label { color: #666; flex-shrink: 0; }
@@ -69,7 +69,7 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
   @media screen and (max-width: 420px) {
     body { padding: 12px 8px; }
     .ticket-body { padding: 16px; }
-    .ticket-code { font-size: 26px; letter-spacing: 3px; }
+    .ticket-code { font-size: 24px; letter-spacing: 3px; }
   }
 </style>
 </head>
@@ -353,7 +353,7 @@ function TicketDetailModal({ ticket, sessions, onClose, onPrint }: {
             <div className="fiche-code-label">Code</div>
             <div className="fiche-code">{ticket.code}</div>
             <div className="fiche-qr">
-              <QRCode value={ticket.code} size={72} style={{ background: 'white', padding: 4, borderRadius: 6, display: 'block' }} />
+              <QRCode value={ticket.code} size={72} />
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>

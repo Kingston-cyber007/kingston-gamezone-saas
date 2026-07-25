@@ -36,10 +36,11 @@ function AuthPage() {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("invite");
       if (token) {
-        supabase.from("tenant_invitations").select("email").eq("token", token).maybeSingle().then(({ data }) => {
-          if (data?.email) {
-            setInviteEmail(data.email);
-            setEmail(data.email);
+        supabase.rpc("get_invitation_by_token", { _token: token }).then(({ data }) => {
+          const row = Array.isArray(data) ? data[0] : null;
+          if (row?.email) {
+            setInviteEmail(row.email);
+            setEmail(row.email);
             setMode("signup");
           }
         });

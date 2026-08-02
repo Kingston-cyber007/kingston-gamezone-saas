@@ -1,11 +1,15 @@
 
--- Realtime publication
-ALTER PUBLICATION supabase_realtime ADD TABLE public.sessions_caisse;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.postes;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.tickets;
-ALTER TABLE public.sessions_caisse REPLICA IDENTITY FULL;
-ALTER TABLE public.postes REPLICA IDENTITY FULL;
-ALTER TABLE public.tickets REPLICA IDENTITY FULL;
+-- Realtime — RT.H.7 — désactivé en migration.
+-- Supabase bloque les commandes touchant la réplication (`ALTER PUBLICATION supabase_realtime`
+-- ET `ALTER TABLE ... REPLICA IDENTITY FULL`) via CLI/migration. À configurer manuellement via
+-- Dashboard → Database → Publications → supabase_realtime → ajouter les 3 tables
+-- (sessions_caisse, postes, tickets). Le mode `REPLICA IDENTITY DEFAULT` est géré automatiquement.
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.sessions_caisse;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.postes;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.tickets;
+-- ALTER TABLE public.sessions_caisse REPLICA IDENTITY FULL;
+-- ALTER TABLE public.postes REPLICA IDENTITY FULL;
+-- ALTER TABLE public.tickets REPLICA IDENTITY FULL;
 
 -- Invitations table
 CREATE TABLE public.tenant_invitations (
@@ -13,7 +17,7 @@ CREATE TABLE public.tenant_invitations (
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   role public.app_role NOT NULL,
-  token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(18), 'hex'),
+  token TEXT NOT NULL UNIQUE DEFAULT replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''),
   invited_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   accepted_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '14 days'),

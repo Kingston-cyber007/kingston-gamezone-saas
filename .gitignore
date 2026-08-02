@@ -35,3 +35,11 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Claude Code local config (skills, agents)
+.claude/
+.agents/
+
+# Supabase CLI cache
+supabase/.temp/
+

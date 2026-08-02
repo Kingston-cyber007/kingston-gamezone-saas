@@ -9,82 +9,60 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedPlatformRouteRouteImport } from './routes/_authenticated/platform/route'
-import { Route as AuthenticatedClientRouteRouteImport } from './routes/_authenticated/client/route'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
-import { Route as AuthenticatedPlatformIndexRouteImport } from './routes/_authenticated/platform/index'
-import { Route as AuthenticatedClientIndexRouteImport } from './routes/_authenticated/client/index'
+import { Route as AuthenticatedClientRouteRouteImport } from './routes/_authenticated/client/route'
+import { Route as AuthenticatedPlatformRouteRouteImport } from './routes/_authenticated/platform/route'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
-import { Route as AuthenticatedAppTicketsRouteImport } from './routes/_authenticated/app/tickets'
-import { Route as AuthenticatedAppStatsRouteImport } from './routes/_authenticated/app/stats'
-import { Route as AuthenticatedAppSalleRouteImport } from './routes/_authenticated/app/salle'
-import { Route as AuthenticatedAppReglagesRouteImport } from './routes/_authenticated/app/reglages'
 import { Route as AuthenticatedAppCaisseRouteImport } from './routes/_authenticated/app/caisse'
+import { Route as AuthenticatedAppReglagesRouteImport } from './routes/_authenticated/app/reglages'
+import { Route as AuthenticatedAppSalleRouteImport } from './routes/_authenticated/app/salle'
+import { Route as AuthenticatedAppStatsRouteImport } from './routes/_authenticated/app/stats'
+import { Route as AuthenticatedAppTicketsRouteImport } from './routes/_authenticated/app/tickets'
+import { Route as AuthenticatedClientIndexRouteImport } from './routes/_authenticated/client/index'
+import { Route as AuthenticatedPlatformIndexRouteImport } from './routes/_authenticated/platform/index'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedPlatformRouteRoute =
-  AuthenticatedPlatformRouteRouteImport.update({
-    id: '/platform',
-    path: '/platform',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
+const AuthenticatedAppRouteRoute = AuthenticatedAppRouteRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClientRouteRoute =
   AuthenticatedClientRouteRouteImport.update({
     id: '/client',
     path: '/client',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAppRouteRoute = AuthenticatedAppRouteRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPlatformIndexRoute =
-  AuthenticatedPlatformIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPlatformRouteRoute,
-  } as any)
-const AuthenticatedClientIndexRoute =
-  AuthenticatedClientIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedClientRouteRoute,
+const AuthenticatedPlatformRouteRoute =
+  AuthenticatedPlatformRouteRouteImport.update({
+    id: '/platform',
+    path: '/platform',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
-const AuthenticatedAppTicketsRoute = AuthenticatedAppTicketsRouteImport.update({
-  id: '/tickets',
-  path: '/tickets',
-  getParentRoute: () => AuthenticatedAppRouteRoute,
-} as any)
-const AuthenticatedAppStatsRoute = AuthenticatedAppStatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
-  getParentRoute: () => AuthenticatedAppRouteRoute,
-} as any)
-const AuthenticatedAppSalleRoute = AuthenticatedAppSalleRouteImport.update({
-  id: '/salle',
-  path: '/salle',
+const AuthenticatedAppCaisseRoute = AuthenticatedAppCaisseRouteImport.update({
+  id: '/caisse',
+  path: '/caisse',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
 const AuthenticatedAppReglagesRoute =
@@ -93,11 +71,33 @@ const AuthenticatedAppReglagesRoute =
     path: '/reglages',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
-const AuthenticatedAppCaisseRoute = AuthenticatedAppCaisseRouteImport.update({
-  id: '/caisse',
-  path: '/caisse',
+const AuthenticatedAppSalleRoute = AuthenticatedAppSalleRouteImport.update({
+  id: '/salle',
+  path: '/salle',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
+const AuthenticatedAppStatsRoute = AuthenticatedAppStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const AuthenticatedAppTicketsRoute = AuthenticatedAppTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const AuthenticatedClientIndexRoute =
+  AuthenticatedClientIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedClientRouteRoute,
+  } as any)
+const AuthenticatedPlatformIndexRoute =
+  AuthenticatedPlatformIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPlatformRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -197,11 +197,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -211,18 +211,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/platform': {
-      id: '/_authenticated/platform'
-      path: '/platform'
-      fullPath: '/platform'
-      preLoaderRoute: typeof AuthenticatedPlatformRouteRouteImport
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/client': {
@@ -232,26 +232,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/app': {
-      id: '/_authenticated/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AuthenticatedAppRouteRouteImport
+    '/_authenticated/platform': {
+      id: '/_authenticated/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof AuthenticatedPlatformRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/platform/': {
-      id: '/_authenticated/platform/'
-      path: '/'
-      fullPath: '/platform/'
-      preLoaderRoute: typeof AuthenticatedPlatformIndexRouteImport
-      parentRoute: typeof AuthenticatedPlatformRouteRoute
-    }
-    '/_authenticated/client/': {
-      id: '/_authenticated/client/'
-      path: '/'
-      fullPath: '/client/'
-      preLoaderRoute: typeof AuthenticatedClientIndexRouteImport
-      parentRoute: typeof AuthenticatedClientRouteRoute
     }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
@@ -260,25 +246,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
-    '/_authenticated/app/tickets': {
-      id: '/_authenticated/app/tickets'
-      path: '/tickets'
-      fullPath: '/app/tickets'
-      preLoaderRoute: typeof AuthenticatedAppTicketsRouteImport
-      parentRoute: typeof AuthenticatedAppRouteRoute
-    }
-    '/_authenticated/app/stats': {
-      id: '/_authenticated/app/stats'
-      path: '/stats'
-      fullPath: '/app/stats'
-      preLoaderRoute: typeof AuthenticatedAppStatsRouteImport
-      parentRoute: typeof AuthenticatedAppRouteRoute
-    }
-    '/_authenticated/app/salle': {
-      id: '/_authenticated/app/salle'
-      path: '/salle'
-      fullPath: '/app/salle'
-      preLoaderRoute: typeof AuthenticatedAppSalleRouteImport
+    '/_authenticated/app/caisse': {
+      id: '/_authenticated/app/caisse'
+      path: '/caisse'
+      fullPath: '/app/caisse'
+      preLoaderRoute: typeof AuthenticatedAppCaisseRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
     '/_authenticated/app/reglages': {
@@ -288,12 +260,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppReglagesRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
-    '/_authenticated/app/caisse': {
-      id: '/_authenticated/app/caisse'
-      path: '/caisse'
-      fullPath: '/app/caisse'
-      preLoaderRoute: typeof AuthenticatedAppCaisseRouteImport
+    '/_authenticated/app/salle': {
+      id: '/_authenticated/app/salle'
+      path: '/salle'
+      fullPath: '/app/salle'
+      preLoaderRoute: typeof AuthenticatedAppSalleRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/stats': {
+      id: '/_authenticated/app/stats'
+      path: '/stats'
+      fullPath: '/app/stats'
+      preLoaderRoute: typeof AuthenticatedAppStatsRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/tickets': {
+      id: '/_authenticated/app/tickets'
+      path: '/tickets'
+      fullPath: '/app/tickets'
+      preLoaderRoute: typeof AuthenticatedAppTicketsRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/client/': {
+      id: '/_authenticated/client/'
+      path: '/'
+      fullPath: '/client/'
+      preLoaderRoute: typeof AuthenticatedClientIndexRouteImport
+      parentRoute: typeof AuthenticatedClientRouteRoute
+    }
+    '/_authenticated/platform/': {
+      id: '/_authenticated/platform/'
+      path: '/'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof AuthenticatedPlatformIndexRouteImport
+      parentRoute: typeof AuthenticatedPlatformRouteRoute
     }
   }
 }
@@ -372,3 +372,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

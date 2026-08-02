@@ -18,6 +18,12 @@ interface Ticket {
   total_amount: number;
 }
 
+/**
+ * Espace client — Kingston GameZone (RT.B.15).
+ * Logique métier inchangée : lit `tickets` et `loyalty_points` filtrés par
+ * `client_user_id = user.id`. Refonte visuelle via classes KG (accent cyan
+ * pour distinguer du violet admin plateforme).
+ */
 function ClientHome() {
   const { user } = useSession();
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -28,7 +34,11 @@ function ClientHome() {
     if (!user) return;
     (async () => {
       const [tk, lp] = await Promise.all([
-        supabase.from("tickets").select("id, code, nom, prenom, date_creation, date_expiration, saved_remaining_ms, total_amount").eq("client_user_id", user.id).order("date_creation", { ascending: false }),
+        supabase
+          .from("tickets")
+          .select("id, code, nom, prenom, date_creation, date_expiration, saved_remaining_ms, total_amount")
+          .eq("client_user_id", user.id)
+          .order("date_creation", { ascending: false }),
         supabase.from("loyalty_points").select("points").eq("client_user_id", user.id),
       ]);
       setTickets((tk.data ?? []) as Ticket[]);
@@ -38,44 +48,62 @@ function ClientHome() {
   }, [user?.id]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-black/40 border border-cyan-500/30 p-6">
-          <div className="text-sm text-gray-400 uppercase">Points de fidélité</div>
-          <div className="text-4xl font-black text-cyan-300 mt-2">{loyalty}</div>
-          <div className="text-xs text-gray-500 mt-1">Tous programmes confondus</div>
+    <div className="kg-client-home">
+      <section className="kg-client-kpis" aria-label="Indicateurs clés">
+        <div className="kg-client-kpi">
+          <div className="kg-client-kpi-label">Points de fidélité</div>
+          <div className="kg-client-kpi-value">{loyalty}</div>
+          <div className="kg-client-kpi-meta">Tous programmes confondus</div>
         </div>
-        <div className="rounded-2xl bg-black/40 border border-cyan-500/30 p-6">
-          <div className="text-sm text-gray-400 uppercase">Mes tickets</div>
-          <div className="text-4xl font-black text-cyan-300 mt-2">{tickets.length}</div>
-          <div className="text-xs text-gray-500 mt-1">Historique complet</div>
+        <div className="kg-client-kpi">
+          <div className="kg-client-kpi-label">Mes tickets</div>
+          <div className="kg-client-kpi-value">{tickets.length}</div>
+          <div className="kg-client-kpi-meta">Historique complet</div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-2xl bg-black/40 border border-cyan-500/20 p-6">
-        <h2 className="text-lg font-bold mb-4">Historique des tickets</h2>
+      <section className="kg-client-section" aria-labelledby="kg-client-tickets-title">
+        <h2 id="kg-client-tickets-title" className="kg-client-section-title">
+          Historique des tickets
+        </h2>
         {loading ? (
-          <p className="text-gray-500">Chargement…</p>
+          <p className="kg-client-loading">Chargement…</p>
         ) : tickets.length === 0 ? (
-          <p className="text-gray-500">Aucun ticket associé à votre compte pour le moment. Demandez à la caisse d'associer vos prochains tickets à votre email.</p>
+          <p className="kg-client-empty">
+            Aucun ticket associé à votre compte pour le moment. Demandez à la
+            caisse d&apos;associer vos prochains tickets à votre email.
+          </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-gray-400 uppercase text-xs">
-              <tr><th className="text-left py-2">Code</th><th className="text-left">Nom</th><th className="text-right">Montant</th><th className="text-right">Créé</th></tr>
-            </thead>
-            <tbody>
-              {tickets.map((t) => (
-                <tr key={t.id} className="border-t border-white/5">
-                  <td className="py-2 font-mono text-cyan-300">{t.code}</td>
-                  <td>{t.prenom} {t.nom}</td>
-                  <td className="text-right">{Number(t.total_amount).toLocaleString()} FCFA</td>
-                  <td className="text-right text-gray-400">{new Date(t.date_creation).toLocaleDateString()}</td>
+          <div className="kg-client-table-wrap">
+            <table className="kg-client-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Nom</th>
+                  <th className="right">Montant</th>
+                  <th className="right">Créé</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tickets.map((t) => (
+                  <tr key={t.id}>
+                    <td className="mono">{t.code}</td>
+                    <td>
+                      {t.prenom} {t.nom}
+                    </td>
+                    <td className="right">
+                      {Number(t.total_amount).toLocaleString()} FCFA
+                    </td>
+                    <td className="right" style={{ color: "var(--text2)" }}>
+                      {new Date(t.date_creation).toLocaleDateString("fr-FR")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

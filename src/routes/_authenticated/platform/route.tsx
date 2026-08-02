@@ -1,21 +1,48 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession, useUserAccess } from "@/lib/session";
-import logoAsset from "@/assets/kingston-logo.png.asset.json";
+import { useSession } from "@/lib/session";
+import "@/views/theme.css";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/_authenticated/platform")({
+  // RT.H.8 — la garde anti-boucle de redirection est ici.
+  // Avant ce hook, useEffect montait après render ET relisait roles via
+  // useUserAccess, ce qui createsait une fenêtre transitoire avec
+  // isPlatformAdmin=false → redirect vers / → loop. En beforeLoad, la
+  // décision est prise avant tout render ; un seul aller-retour.
+  beforeLoad: async ({ context }) => {
+    // Le parent _authenticated.beforeLoad garantit user !== null
+    // (déjà vérifié via supabase.auth.getUser()).
+    const user = context.user as { id: string };
+    if (!user) throw redirect({ to: "/auth" });
+
+    const { data: roles, error } = await supabase
+      .from("user_tenant_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+    // Fail-closed : on n'affiche pas la plateforme si on ne peut pas vérifier.
+    if (error) throw redirect({ to: "/" });
+
+    const isPlatformAdmin = (roles ?? []).some((r) => r.role === "platform_admin");
+    if (!isPlatformAdmin) throw redirect({ to: "/" });
+
+    // Retour optionnel pour réutilisation par les enfants via context.
+    return { platformRoles: roles ?? [] };
+  },
   component: PlatformShell,
 });
 
+/**
+ * Coquille platform — Kingston GameZone (RT.B.13 + RT.H.8).
+ * Garde d'accès déplacée en beforeLoad (avant render). Affiche la palette KG
+ * (accent violet) pour distinguer de l'espace client. La page
+ * `platform/index.tsx` (RT.B.14) accueille la carte « Administrateurs
+ * plateforme » (étape 5B.3).
+ */
 function PlatformShell() {
   const { user } = useSession();
-  const { isPlatformAdmin, loading } = useUserAccess(user);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !isPlatformAdmin) navigate({ to: "/" });
-  }, [loading, isPlatformAdmin, navigate]);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -23,18 +50,30 @@ function PlatformShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,#2e1a0f,#140a06)] text-white">
-      <header className="max-w-6xl mx-auto flex items-center justify-between p-6">
-        <Link to="/" className="flex items-center gap-3">
-          <img src={logoAsset.url} alt="Kingston GameZone" className="h-10" />
-          <span className="font-bold text-amber-300">Admin plateforme</span>
+    <div className="kg-platform-shell">
+      <header className="kg-platform-header" role="banner">
+        <Link to="/" className="kg-platform-brand" aria-label="Kingston GameZone — Accueil">
+          <img src={logo} alt="" aria-hidden="true" className="kg-platform-brand-logo" />
+          <span className="kg-platform-brand-text">Admin plateforme</span>
         </Link>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-400">{user?.email}</span>
-          <button onClick={signOut} className="px-3 py-1.5 rounded-lg border border-amber-500/40 hover:bg-amber-500/10">Déconnexion</button>
+        <div className="kg-platform-user">
+          {user?.email && <span className="kg-platform-email">{user.email}</span>}
+          <button
+            type="button"
+            onClick={signOut}
+            className="kg-platform-signout"
+            aria-label="Se déconnecter"
+          >
+            Déconnexion
+          </button>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto p-6"><Outlet /></main>
+      <main className="kg-platform-main">
+        <Outlet />
+      </main>
+      {/* RT.B V1 — ToastContainer local retiré (RT.T.0) : maintenant monté
+          globalement dans `__root.tsx` via le store Zustand, ce qui élimine
+          la dette de double-mount et couvre aussi `/client`. */}
     </div>
   );
 }

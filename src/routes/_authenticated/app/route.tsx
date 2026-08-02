@@ -1,15 +1,61 @@
-import { createFileRoute, Outlet, useNavigate, useLocation, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useLocation, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import "@/kingston/kingston.css";
-import { useStore } from "@/kingston/store/useStore";
-import { ToastContainer, showToast } from "@/kingston/components/Toast";
-import { useT, useI18n, LOCALES } from "@/kingston/i18n";
-import { fmtMoney, todayKey } from "@/kingston/lib/helpers";
+import "@/views/theme.css";
+import { useStore } from "@/store/useStore";
+import { showToast } from "@/views/components/Toast";
+import { PowerCutOverlay } from "@/views/components/PowerCutOverlay";
+import { useT, useI18n, LOCALES } from "@/i18n";
+import { fmtMoney, todayKey } from "@/lib-app/helpers";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession, useUserAccess, getActiveTenantId, setActiveTenantId } from "@/lib/session";
-import logoAsset from "@/assets/kingston-logo.png.asset.json";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/_authenticated/app")({
+  // RT.P.0-ppfix — garde anti-boucle de redirection, dans le même esprit que
+  // RT.H.8 sur /platform. Avant ce hook, le `useEffect` ligne ~35 vérifiait
+  // `staffTenants.length === 0 && !isPlatformAdmin` APRÈS render, ce qui créait
+  // une fenêtre transitoire où la coquille /app/* était montée avec un store
+  // Zustand vide avant que le navigate ne se déclenche. Si l'utilisateur
+  // naviguait à nouveau pendant cette fenêtre (clic rapide, back-button), on
+  // pouvait boucler /app/* → / → /app/* avant que les rôles Supabase ne soient
+  // résolus.
+  //
+  // En beforeLoad, on interroge Supabase une seule fois, AVANT tout render,
+  // et on throw redirect si l'utilisateur n'a pas accès à /app/*. Un seul
+  // aller-retour, pas de fenêtre transitoire.
+  //
+  // Note : ce hook ne dédouane pas du useEffect existant (qui re-vérifie en
+  // runtime pour gérer le cas où staffTenants devient vide APRÈS mount — par
+  // exemple révocation live d'un rôle par un platform_admin). Les deux se
+  // complètent : beforeLoad ferme le trou ping-pong initial, useEffect ferme
+  // le trou révocation live.
+  beforeLoad: async ({ context }) => {
+    const user = context.user as { id: string } | undefined;
+    if (!user) throw redirect({ to: "/auth" });
+
+    const { data: roles, error } = await supabase
+      .from("user_tenant_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+    // Fail-closed : on n'affiche pas l'app si on ne peut pas vérifier.
+    if (error) throw redirect({ to: "/" });
+
+    const list = roles ?? [];
+    const isPlatformAdmin = list.some((r) => r.role === "platform_admin");
+    const isStaffOrLounge = list.some(
+      (r) => r.role === "staff" || r.role === "lounge_admin",
+    );
+
+    // Ni staff/lounge ni platform_admin → pas d'accès à /app/*.
+    // (Un platform_admin sans tenant assigné peut quand même naviguer
+    // librement, c'est une décision : on lui laisse l'accès pour qu'il puisse
+    // tester l'expérience staff. S'il n'a aucun tenant, il verra l'écran
+    // vide géré par le useEffect runtime.)
+    if (!isStaffOrLounge) throw redirect({ to: "/" });
+
+    return { isPlatformAdmin, isStaffOrLounge };
+  },
   component: AppShell,
 });
 
@@ -31,6 +77,10 @@ function AppShell() {
     if (activeTenant) setActiveTenantId(activeTenant.id);
   }, [activeTenant?.id]);
 
+  // RT.P.0-ppfix — ce useEffect ne gère plus la garde anti-boucle (déplacée
+  // en beforeLoad ci-dessus). Il reste pertinent uniquement pour le cas
+  // runtime où staffTenants devient vide APRÈS mount (ex : révocation live
+  // par un platform_admin via la UI). On garde un toast user-friendly.
   useEffect(() => {
     if (!accessLoading && staffTenants.length === 0 && !isPlatformAdmin) {
       showToast("Aucune salle assignée. Redirection…");
@@ -103,7 +153,7 @@ function AppShell() {
 
       <header className="topbar">
         <div className="brand">
-          <img src={logoAsset.url} alt="Kingston GameZone" style={{ height: 44, objectFit: "contain" }} />
+          <img src={logo} alt="Kingston GameZone" style={{ height: 44, objectFit: "contain" }} />
           <div className="brand-text">
             <strong>{activeTenant?.name ?? "Kingston GameZone"}</strong>
             <span>{user?.email ?? "—"}</span>
@@ -177,10 +227,11 @@ function AppShell() {
       </main>
 
       <footer className="kg-footer">
-        Kingston GameZone · SaaS Multi-salles · Données synchronisées via Lovable Cloud
+        Kingston GameZone · SaaS Multi-salles · Données synchronisées via Supabase
       </footer>
 
-      <ToastContainer />
+      <PowerCutOverlay />
+      {/* RT.T.0 — ToastContainer retiré (monté globalement dans __root.tsx) */}
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useSession, useUserAccess } from "@/lib/session";
-import { useNavigate } from "@tanstack/react-router";
-import logoAsset from "@/assets/kingston-logo.png.asset.json";
+import "@/views/theme.css";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,89 +15,194 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  // RT.H.8 — la garde anti-boucle de redirection est ici.
+  // Avant ce hook, useEffect redirigeait après render ET relisait roles via
+  // useUserAccess, ce qui createsait une fenêtre transitoire avec
+  // isPlatformAdmin=false → redirect depuis /platform → loop. En beforeLoad,
+  // la décision est prise avant tout render. Un seul aller-retour.
+  beforeLoad: async () => {
+    // Pas de context parent : `/` est à la racine.
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return {}; // Non logué → landing normale.
+
+    const { data: roles, error: rolesError } = await supabase
+      .from("user_tenant_roles")
+      .select("tenant_id, role")
+      .eq("user_id", data.user.id);
+
+    if (rolesError) return {}; // Erreur DB → landing + warning.
+
+    const list = roles ?? [];
+    const isPlatformAdmin = list.some((r) => r.role === "platform_admin");
+    const isClient = list.some((r) => r.role === "client");
+    const staffTenantId = list.find((r) => r.role === "staff" || r.role === "lounge_admin")?.tenant_id ?? null;
+
+    // Ordre de priorité : admin > staff/lounge > client > landing.
+    if (isPlatformAdmin) throw redirect({ to: "/platform" });
+    if (staffTenantId) throw redirect({ to: "/app/salle" });
+    if (isClient) throw redirect({ to: "/client" });
+
+    return {}; // Logué sans rôle → landing + section warning.
+  },
   component: Landing,
 });
 
+/**
+ * Landing — Kingston GameZone (RT.B.10b + RT.B.10c polish)
+ *
+ * Structure sémantique :
+ *  - <header role="banner">      — barre de marque + nav signée
+ *  - <main>                      — contenu
+ *      - <section> hero          — titre, baseline, CTA primaire/secondaire
+ *      - <section> features      — 6 cartes capacités (emoji + titre + body)
+ *      - <section> how-it-works  — 3 étapes (Mise en route / Au quotidien / Pilotage)
+ *      - <section> warning       — affiché seulement si compte sans rôle
+ *  - <footer role="contentinfo"> — liens + signature
+ *
+ * Classes KG consommées (définies dans src/views/theme.css, RT.B.10c) :
+ *   .kg-cta-primary, .kg-cta-ghost, .kg-nav-link, .kg-nav-link-primary,
+ *   .kg-landing-feature-card, .kg-landing-step, .kg-landing-warning
+ *
+ * L'auto-routing signed-in reste identique : plateforme > salle > client > landing.
+ */
 function Landing() {
-  const { user, loading } = useSession();
-  const { staffTenants, isPlatformAdmin, isClient, loading: accessLoading } = useUserAccess(user);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (loading || accessLoading || !user) return;
-    // Auto-route signed-in users to their primary surface
-    if (isPlatformAdmin) navigate({ to: "/platform" });
-    else if (staffTenants.length > 0) navigate({ to: "/app/salle" });
-    else if (isClient) navigate({ to: "/client" });
-    // else: no roles yet — stay on landing
-  }, [loading, accessLoading, user, isPlatformAdmin, isClient, staffTenants.length, navigate]);
+  const { user } = useSession();
+  const { staffTenants, isPlatformAdmin, isClient } = useUserAccess(user);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[radial-gradient(ellipse_at_top,#1a0f2e,#0a0614)] text-white">
-      <header className="w-full max-w-6xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-6 flex-wrap">
-        <img src={logoAsset.url} alt="Kingston GameZone" className="h-10 sm:h-14 shrink-0" />
-        <nav className="flex gap-2 sm:gap-3 flex-wrap justify-end">
+    <div className="kg-landing min-h-screen w-full overflow-x-hidden kg-landing-bg">
+      {/* ===== HEADER / NAV ===== */}
+      <header role="banner" className="kg-landing-header">
+        <Link to="/" aria-label="Kingston GameZone — Accueil" className="kg-landing-brand">
+          <img
+            src={logo}
+            alt=""
+            aria-hidden="true"
+            className="kg-landing-brand-logo"
+          />
+          <span className="kg-landing-brand-text">
+            KINGSTON <span className="kg-landing-brand-accent">GAMEZONE</span>
+          </span>
+        </Link>
+        <nav aria-label="Navigation principale" className="kg-landing-nav">
           {user ? (
             <>
-              {staffTenants.length > 0 && <Link to="/app/salle" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-purple-600 hover:bg-purple-500">Caisse</Link>}
-              {isClient && <Link to="/client" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-cyan-600 hover:bg-cyan-500">Mon espace</Link>}
-              {isPlatformAdmin && <Link to="/platform" className="px-3 sm:px-4 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-500">Plateforme</Link>}
+              {staffTenants.length > 0 && (
+                <Link to="/app/salle" className="kg-nav-link">
+                  Caisse
+                </Link>
+              )}
+              {isClient && (
+                <Link to="/client" className="kg-nav-link">
+                  Mon espace
+                </Link>
+              )}
+              {isPlatformAdmin && (
+                <Link to="/platform" className="kg-nav-link">
+                  Plateforme
+                </Link>
+              )}
             </>
           ) : (
-            <Link to="/auth" className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90">Connexion</Link>
+            <Link to="/auth" className="kg-nav-link-primary">
+              Connexion
+            </Link>
           )}
         </nav>
       </header>
 
-      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        <section className="text-center max-w-3xl mx-auto">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black leading-tight bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-            La caisse gaming pour l'Afrique
+      <main className="kg-landing-main">
+        {/* ===== HERO ===== */}
+        <section aria-labelledby="kg-hero-title" className="kg-landing-hero">
+          <span className="kg-landing-eyebrow">Plateforme SaaS multi-salles</span>
+          <h1 id="kg-hero-title" className="kg-landing-hero-title">
+            La caisse gaming pour l&apos;Afrique
           </h1>
-          <p className="mt-5 sm:mt-6 text-base sm:text-lg text-gray-300 px-2">
-            Gérez vos postes, tickets, sessions et paiements Mobile Money — même hors connexion.
-            Multi-salles, rôles fins, statistiques temps réel.
+          <p className="kg-landing-hero-baseline">
+            Gérez vos postes, tickets, sessions et paiements Mobile Money — même hors
+            connexion. Multi-salles, rôles fins, statistiques temps réel.
           </p>
-          <div className="mt-8 flex gap-3 justify-center flex-wrap">
-            <Link to="/auth" className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 font-semibold hover:opacity-90">
-              Commencer
+          <div className="kg-landing-hero-ctas">
+            <Link to="/auth" className="kg-cta-primary">
+              Démarrer maintenant
             </Link>
             {user && staffTenants.length > 0 && (
-              <Link to="/app/salle" className="px-6 py-3 rounded-xl border border-purple-500/40 hover:bg-purple-500/10">
+              <Link to="/app/salle" className="kg-cta-ghost">
                 Ouvrir la caisse
               </Link>
             )}
           </div>
         </section>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-14 sm:mt-20">
-          {[
-            { icon: "🎮", title: "Sessions & postes", body: "Suivi temps réel, alertes sonores et vocales, pause/reprise." },
-            { icon: "🎫", title: "Tickets & fidélité", body: "QR codes, scanner caméra, temps sauvegardé, points de fidélité." },
-            { icon: "💳", title: "Mobile Money", body: "Airtel Money, MTN, cash — reconciliations et stats par mode." },
-            { icon: "📊", title: "Statistiques", body: "Revenu jour / semaine / mois, top postes, top clients, exports." },
-            { icon: "🌐", title: "Offline-first", body: "L'app tourne sans internet ; sync automatique dès la reconnexion." },
-            { icon: "🏢", title: "Multi-salles", body: "Consolidez plusieurs points de vente sous un même compte." },
-          ].map((c) => (
-            <div key={c.title} className="rounded-2xl bg-black/40 border border-purple-500/20 p-5 sm:p-6 hover:border-purple-400/40 transition">
-              <div className="text-3xl">{c.icon}</div>
-              <h3 className="mt-3 font-bold text-lg">{c.title}</h3>
-              <p className="mt-2 text-sm text-gray-400">{c.body}</p>
-            </div>
-          ))}
+        {/* ===== FEATURES ===== */}
+        <section aria-labelledby="kg-features-title" className="kg-landing-section">
+          <h2 id="kg-features-title" className="kg-landing-section-title">
+            Tout ce qu&apos;il faut pour piloter une salle
+          </h2>
+          <div className="kg-landing-grid">
+            {[
+              { icon: "🎮", title: "Sessions & postes", body: "Suivi temps réel, alertes sonores et vocales, pause/reprise." },
+              { icon: "🎫", title: "Tickets & fidélité", body: "QR codes, scanner caméra, temps sauvegardé, points de fidélité." },
+              { icon: "💳", title: "Mobile Money", body: "Airtel Money, MTN, cash — reconciliations et stats par mode." },
+              { icon: "📊", title: "Statistiques", body: "Revenu jour / semaine / mois, top postes, top clients, exports." },
+              { icon: "🌐", title: "Offline-first", body: "L'app tourne sans internet ; sync automatique dès la reconnexion." },
+              { icon: "🏢", title: "Multi-salles", body: "Consolidez plusieurs points de vente sous un même compte." },
+            ].map((c) => (
+              <article key={c.title} className="kg-landing-feature-card">
+                <div aria-hidden="true" className="kg-landing-feature-icon">
+                  {c.icon}
+                </div>
+                <h3 className="kg-landing-feature-title">{c.title}</h3>
+                <p className="kg-landing-feature-body">{c.body}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
+        {/* ===== HOW IT WORKS ===== */}
+        <section aria-labelledby="kg-howto-title" className="kg-landing-section">
+          <h2 id="kg-howto-title" className="kg-landing-section-title">
+            Comment ça marche
+          </h2>
+          <ol className="kg-landing-grid kg-landing-steps">
+            {[
+              { n: 1, title: "Mise en route", body: "Créez votre salle, invitez vos gérants et configurez vos postes en moins de 10 minutes." },
+              { n: 2, title: "Au quotidien", body: "Lancez les sessions, encaissez Mobile Money, scannez les tickets — l'app tourne même sans réseau." },
+              { n: 3, title: "Pilotage", body: "Suivez vos revenus, vos meilleurs clients et vos heures de pointe depuis n'importe où." },
+            ].map((s) => (
+              <li key={s.n} className="kg-landing-step">
+                <span aria-hidden="true" className="kg-landing-step-number">
+                  {s.n}
+                </span>
+                <h3 className="kg-landing-step-title">{s.title}</h3>
+                <p className="kg-landing-step-body">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ===== NO-ROLE WARNING ===== */}
         {user && staffTenants.length === 0 && !isPlatformAdmin && !isClient && (
-          <section className="mt-16 max-w-xl mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 p-6 text-center">
-            <p className="text-amber-200">
-              Votre compte n'a pas encore de rôle. Contactez votre administrateur pour être ajouté à une salle.
+          <section aria-labelledby="kg-warning-title" className="kg-landing-warning">
+            <h2 id="kg-warning-title" className="kg-landing-warning-title">
+              Aucun rôle pour le moment
+            </h2>
+            <p className="kg-landing-warning-body">
+              Votre compte n&apos;a pas encore de rôle. Contactez votre administrateur
+              pour être ajouté à une salle.
             </p>
           </section>
         )}
       </main>
 
-      <footer className="border-t border-purple-500/10 mt-16 py-8 text-center text-sm text-gray-500">
-        Kingston GameZone — Pointe-Noire · Congo
+      {/* ===== FOOTER ===== */}
+      <footer role="contentinfo" className="kg-landing-footer">
+        <div className="kg-landing-footer-brand">
+          KINGSTON <span className="kg-landing-brand-accent">GAMEZONE</span>
+        </div>
+        <div className="kg-landing-footer-meta">
+          Pointe-Noire · Congo · SaaS gaming multi-salles
+        </div>
       </footer>
     </div>
   );

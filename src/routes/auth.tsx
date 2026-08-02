@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
-import logoAsset from "@/assets/kingston-logo.png.asset.json";
+import { cloud } from "@/integrations/cloud/auth";
+import "@/views/theme.css";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -16,12 +17,23 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+/**
+ * Page auth — Kingston GameZone (RT.B.11).
+ * Logique métier inchangée :
+ *  - Session existante → redirige vers /
+ *  - Token `invite` en query string → pré-remplit l'email + force le mode signup
+ *  - Signup / signin email-password via Supabase
+ *  - OAuth Google via wrapper `cloud.auth.signInWithOAuth` (RT.H.2 — bascule vers Supabase natif)
+ * Refonte visuelle : classes KG (palette violet/cyan).
+ */
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [age, setAge] = useState<string>("");  // RT.H.3 — string pour autoriser vide; parse côté submit
+  const [sex, setSex] = useState<"" | "femme" | "homme">("");  // RT.H.3
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -31,7 +43,6 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/" });
     });
-    // Check invite token in URL
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("invite");
@@ -55,12 +66,30 @@ function AuthPage() {
     setInfo(null);
     try {
       if (mode === "signup") {
+        // RT.H.3 — Validation âge + sexe
+        // RT.H.4 — Restriction 16+ (majorité numérique RDC, services en ligne)
+        const ageNum = age ? parseInt(age, 10) : null;
+        if (age && (isNaN(ageNum!) || ageNum! < 16 || ageNum! > 120)) {
+          setError("L'accès à Kingston GameZone est réservé aux personnes âgées de 16 ans et plus.");
+          setLoading(false);
+          return;
+        }
+        if (!sex) {
+          setError("Veuillez sélectionner votre sexe.");
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { display_name: displayName || email.split("@")[0] },
+            data: {
+              display_name: displayName || email.split("@")[0],
+              age: ageNum,
+              sex,
+            },
           },
         });
         if (error) throw error;
@@ -80,7 +109,7 @@ function AuthPage() {
 
   async function handleGoogle() {
     setError(null);
-    const result = await lovable.auth.signInWithOAuth("google", {
+    const result = await cloud.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
@@ -91,45 +120,91 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[radial-gradient(ellipse_at_top,#1a0f2e,#0a0614)] p-4">
-      <div className="w-full max-w-md rounded-2xl bg-black/40 border border-purple-500/30 backdrop-blur-xl p-8 shadow-2xl">
-        <div className="flex flex-col items-center mb-6">
-          <img src={logoAsset.url} alt="Kingston GameZone" className="h-24 object-contain drop-shadow-[0_0_20px_rgba(139,92,246,0.5)]" />
-          <h1 className="mt-4 text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+    <main className="kg-auth">
+      <section className="kg-auth-card" aria-labelledby="kg-auth-title">
+        <header className="kg-auth-header">
+          <img src={logo} alt="Kingston GameZone" className="kg-auth-logo" />
+          <h1 id="kg-auth-title" className="kg-auth-title">
             {mode === "signin" ? "Connexion" : "Créer un compte"}
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Plateforme SaaS multi-salles</p>
-        </div>
+          <p className="kg-auth-subtitle">Plateforme SaaS multi-salles</p>
+        </header>
 
         {inviteEmail && (
-          <div className="mb-4 rounded-lg bg-purple-500/10 border border-purple-500/30 px-3 py-2 text-sm text-purple-200">
-            🎟️ Invitation détectée pour <strong>{inviteEmail}</strong>. Créez votre compte pour rejoindre la salle.
+          <div className="kg-auth-invite" role="status">
+            🎟️ Invitation détectée pour <strong>{inviteEmail}</strong>. Créez votre
+            compte pour rejoindre la salle.
           </div>
         )}
 
         <button
+          type="button"
           onClick={handleGoogle}
-          className="w-full flex items-center justify-center gap-3 rounded-lg bg-white text-gray-900 py-2.5 font-medium hover:bg-gray-100 transition mb-4"
+          className="kg-auth-google"
+          aria-label="Continuer avec Google"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#fbbc05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+            <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/>
+          </svg>
           Continuer avec Google
         </button>
 
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-purple-500/20" />
-          <span className="text-xs text-gray-500 uppercase">ou email</span>
-          <div className="flex-1 h-px bg-purple-500/20" />
+        <div className="kg-auth-divider" role="separator" aria-label="ou email">
+          <span className="kg-auth-divider-line" />
+          <span className="kg-auth-divider-label">ou email</span>
+          <span className="kg-auth-divider-line" />
         </div>
 
-        <form onSubmit={handleEmail} className="space-y-3">
+        <form onSubmit={handleEmail} className="kg-auth-form" aria-label={mode === "signin" ? "Formulaire de connexion" : "Formulaire de création de compte"}>
           {mode === "signup" && (
-            <input
-              type="text"
-              placeholder="Nom d'affichage"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg bg-black/40 border border-purple-500/30 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-400"
-            />
+            <>
+              <input
+                type="text"
+                placeholder="Nom d'affichage"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="kg-auth-input"
+                autoComplete="name"
+              />
+              {/* RT.H.3 — âge + sexe */}
+              <input
+                type="number"
+                placeholder="Âge (16+)"
+                value={age}
+                min={16}
+                max={120}
+                onChange={(e) => setAge(e.target.value)}
+                className="kg-auth-input"
+                autoComplete="off"
+                aria-label="Âge"
+              />
+              <fieldset className="kg-auth-sex" aria-label="Sexe">
+                <legend className="kg-auth-sex-legend">Sexe</legend>
+                <label className="kg-auth-sex-option">
+                  <input
+                    type="radio"
+                    name="sex"
+                    value="femme"
+                    checked={sex === "femme"}
+                    onChange={() => setSex("femme")}
+                  />
+                  <span>Femme</span>
+                </label>
+                <label className="kg-auth-sex-option">
+                  <input
+                    type="radio"
+                    name="sex"
+                    value="homme"
+                    checked={sex === "homme"}
+                    onChange={() => setSex("homme")}
+                  />
+                  <span>Homme</span>
+                </label>
+              </fieldset>
+            </>
           )}
           <input
             type="email"
@@ -137,7 +212,8 @@ function AuthPage() {
             placeholder="email@exemple.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-purple-500/30 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-400"
+            className="kg-auth-input"
+            autoComplete="email"
           />
           <input
             type="password"
@@ -146,34 +222,45 @@ function AuthPage() {
             placeholder="Mot de passe (6+ caractères)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-purple-500/30 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-400"
+            className="kg-auth-input"
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
           />
-          {error && <div className="text-sm text-red-400 bg-red-500/10 rounded px-3 py-2">{error}</div>}
-          {info && <div className="text-sm text-green-400 bg-green-500/10 rounded px-3 py-2">{info}</div>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 text-white py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
-          >
+          {error && (
+            <div className="kg-auth-error" role="alert">
+              {error}
+            </div>
+          )}
+          {info && (
+            <div className="kg-auth-info" role="status">
+              {info}
+            </div>
+          )}
+          <button type="submit" disabled={loading} className="kg-auth-submit">
             {loading ? "…" : mode === "signin" ? "Se connecter" : "Créer le compte"}
           </button>
         </form>
 
-        <div className="text-center mt-4 text-sm text-gray-400">
+        <div className="kg-auth-switch">
           {mode === "signin" ? (
-            <>Pas encore de compte ?{" "}
-              <button onClick={() => setMode("signup")} className="text-purple-400 hover:underline">Inscription</button>
+            <>
+              Pas encore de compte ?
+              <button type="button" onClick={() => setMode("signup")}>
+                Inscription
+              </button>
             </>
           ) : (
-            <>Déjà inscrit ?{" "}
-              <button onClick={() => setMode("signin")} className="text-purple-400 hover:underline">Connexion</button>
+            <>
+              Déjà inscrit ?
+              <button type="button" onClick={() => setMode("signin")}>
+                Connexion
+              </button>
             </>
           )}
         </div>
-        <div className="text-center mt-4 text-xs text-gray-500">
-          <Link to="/" className="hover:text-gray-300">← Retour</Link>
+        <div className="kg-auth-back">
+          <Link to="/">← Retour à l&apos;accueil</Link>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

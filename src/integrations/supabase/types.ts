@@ -429,6 +429,24 @@ export type Database = {
           },
         ]
       }
+    platform_admins: {
+        Row: {
+          created_at: string
+          email: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -10,10 +10,133 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      consoles: {
+        Row: {
+          created_at: string
+          id: string
+          jeux: string[]
+          nom: string
+          notes: string | null
+          poste_id: string
+          serial: string | null
+          status: string
+          tenant_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jeux?: string[]
+          nom: string
+          notes?: string | null
+          poste_id: string
+          serial?: string | null
+          status?: string
+          tenant_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jeux?: string[]
+          nom?: string
+          notes?: string | null
+          poste_id?: string
+          serial?: string | null
+          status?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consoles_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: true
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consoles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      idempotency_keys: {
+        Row: {
+          created_at: string
+          endpoint: string
+          expires_at: string
+          id: string
+          key: string
+          payment_url: string | null
+          reservation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          expires_at?: string
+          id?: string
+          key: string
+          payment_url?: string | null
+          reservation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          expires_at?: string
+          id?: string
+          key?: string
+          payment_url?: string | null
+          reservation_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idempotency_keys_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_points: {
         Row: {
           client_user_id: string
@@ -45,6 +168,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_url: string | null
+          provider: string
+          refund_amount: number
+          refund_reason: string | null
+          reservation_id: string
+          status: string
+          tenant_id: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_url?: string | null
+          provider?: string
+          refund_amount?: number
+          refund_reason?: string | null
+          reservation_id: string
+          status?: string
+          tenant_id: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_url?: string | null
+          provider?: string
+          refund_amount?: number
+          refund_reason?: string | null
+          reservation_id?: string
+          status?: string
+          tenant_id?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          email: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          notes?: string | null
+        }
+        Relationships: []
       }
       postes: {
         Row: {
@@ -116,30 +326,142 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
+          anonymized_at: string | null
           avatar_url: string | null
           created_at: string
+          deleted_at: string | null
           display_name: string | null
           email: string | null
           id: string
+          indicatif_pays: string | null
+          is_minor: boolean | null
+          nom: string | null
+          prenom: string | null
+          scheduled_purge_at: string | null
+          sexe: string | null
+          telephone: string | null
           updated_at: string
         }
         Insert: {
+          age?: number | null
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
           email?: string | null
           id: string
+          indicatif_pays?: string | null
+          is_minor?: boolean | null
+          nom?: string | null
+          prenom?: string | null
+          scheduled_purge_at?: string | null
+          sexe?: string | null
+          telephone?: string | null
           updated_at?: string
         }
         Update: {
+          age?: number | null
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          indicatif_pays?: string | null
+          is_minor?: boolean | null
+          nom?: string | null
+          prenom?: string | null
+          scheduled_purge_at?: string | null
+          sexe?: string | null
+          telephone?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      reservations: {
+        Row: {
+          client_id: string
+          console: string | null
+          created_at: string
+          date_heure: string
+          duree_min: number
+          id: string
+          jeu: string | null
+          mode_paiement: Database["public"]["Enums"]["payment_method"] | null
+          montant_paye: number
+          montant_prevu: number
+          notes: string | null
+          poste_id: string
+          session_id: string | null
+          statut: string
+          tenant_id: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          console?: string | null
+          created_at?: string
+          date_heure: string
+          duree_min: number
+          id?: string
+          jeu?: string | null
+          mode_paiement?: Database["public"]["Enums"]["payment_method"] | null
+          montant_paye?: number
+          montant_prevu?: number
+          notes?: string | null
+          poste_id: string
+          session_id?: string | null
+          statut?: string
+          tenant_id: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          console?: string | null
+          created_at?: string
+          date_heure?: string
+          duree_min?: number
+          id?: string
+          jeu?: string | null
+          mode_paiement?: Database["public"]["Enums"]["payment_method"] | null
+          montant_paye?: number
+          montant_prevu?: number
+          notes?: string | null
+          poste_id?: string
+          session_id?: string | null
+          statut?: string
+          tenant_id?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: false
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions_caisse"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions_caisse: {
         Row: {
@@ -213,6 +535,63 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_applications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_applications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_applications_user_id_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -427,31 +806,30 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_tenant_roles_user_id_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
-      }
-    platform_admins: {
-        Row: {
-          created_at: string
-          email: string
-          notes: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          notes?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          notes?: string | null
-        }
-        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      compute_reservation_price: {
+        Args: { _duree_min: number; _tenant_id: string }
+        Returns: number
+      }
+      count_pending_staff_applications: {
+        Args: { _tenant_id?: string }
+        Returns: number
+      }
+      count_platform_admins: { Args: never; Returns: number }
       get_invitation_by_token: {
         Args: { _token: string }
         Returns: {
@@ -475,11 +853,34 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_admin_email: { Args: { _email: string }; Returns: boolean }
+      purge_expired_profiles: {
+        Args: { batch_size?: number }
+        Returns: {
+          anonymized_at: string
+          purged_user_id: string
+        }[]
+      }
+      restore_deleted_profile: {
+        Args: { _user_id: string }
+        Returns: {
+          restored_at: string
+          was_anonymized: boolean
+        }[]
+      }
+      soft_delete_profile: {
+        Args: { _user_id: string }
+        Returns: {
+          already_deleted: boolean
+          deleted_at: string
+          scheduled_purge_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "platform_admin" | "lounge_admin" | "staff" | "client"
-      payment_method: "cash" | "airtel_money" | "mtn_money"
-      poste_status: "idle" | "busy"
+      payment_method: "cash" | "airtel_money" | "mtn_money" | "carte"
+      poste_status: "idle" | "busy" | "reserved"
       tenant_status: "active" | "suspended"
       ticket_status: "valid" | "exhausted" | "expired"
     }
@@ -607,11 +1008,14 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["platform_admin", "lounge_admin", "staff", "client"],
-      payment_method: ["cash", "airtel_money", "mtn_money"],
-      poste_status: ["idle", "busy"],
+      payment_method: ["cash", "airtel_money", "mtn_money", "carte"],
+      poste_status: ["idle", "busy", "reserved"],
       tenant_status: ["active", "suspended"],
       ticket_status: ["valid", "exhausted", "expired"],
     },

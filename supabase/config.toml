@@ -1,1 +1,24 @@
 project_id = "ybqsfyufnpmhlhdtwkon"
+
+# CHANTIER 1B.3 — Edge Function anti-email-jetable.
+# Pas de JWT requis (verify_jwt = false) : la fonction est idempotente et
+# publique, elle renvoie juste un booléen. La sécurité à la création de
+# compte reste gérée par RLS Supabase + politiques existantes.
+[functions.check-email-jetable]
+verify_jwt = false
+
+# CHANTIER 3 B.1 — Edge Function suppression de compte (FEAT-1 + FEAT-2).
+# JWT REQUIRED (verify_jwt = true) : on lit auth.uid() depuis le JWT caller.
+#   - Auto-suppression : target = caller.id (FEAT-1).
+#   - Suppression tierce : body.target_user_id + check_platform_admin (FEAT-2).
+#   - Bloque sign-in via UPDATE auth.users.banned_until (service_role).
+[functions.delete-own-account]
+verify_jwt = true
+
+# CHANTIER 3 B.2 — Edge Function restauration de compte (FEAT-2 admin).
+# JWT REQUIRED (verify_jwt = true).
+#   - Admin-only : check_platform_admin(caller.id) requis.
+#   - target_user_id OBLIGATOIRE (pas d'auto-restauration).
+#   - restore_deleted_profile(target) atomique SQL + auth.users.
+[functions.restore-account-admin]
+verify_jwt = true

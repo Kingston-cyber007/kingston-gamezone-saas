@@ -2295,6 +2295,56 @@ a { color: inherit; text-decoration: none; }
   border-color: var(--kg-violet);
   background: rgba(124, 58, 237, 0.12);
 }
+
+/* CHANTIER 1B.1 — Row layout pour champs côte à côte (nom/prénom, indicatif/tel). */
+.kg-auth-row {
+  display: flex;
+  gap: 10px;
+}
+.kg-auth-row .kg-auth-input {
+  flex: 1;
+  min-width: 0;
+}
+.kg-auth-indicatif {
+  flex: 0 0 130px;
+}
+.kg-auth-tel {
+  flex: 1;
+}
+
+/* CHANTIER 1B.2 — Bandeau d'avertissement pour < 18 ans. */
+.kg-auth-warn-minor {
+  background: rgba(232, 163, 61, 0.12);
+  border: 1px solid rgba(232, 163, 61, 0.4);
+  border-left: 4px solid var(--amber, #E8A33D);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text1, #f5f5f5);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+/* CHANTIER 1B.4 / 1B.5 — Lien "mot de passe oublié" + bascule candidature staff. */
+.kg-auth-forgot {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text2, #aaa);
+}
+.kg-auth-forgot button {
+  background: none;
+  border: none;
+  color: var(--kg-violet, #a78bfa);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.kg-auth-forgot button:hover {
+  color: var(--kg-cyan, #67e8f9);
+}
 .kg-auth-submit {
   width: 100%;
   padding: 12px 20px;
@@ -3458,4 +3508,354 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .kg-btn-primary { transition: none; }
   .kg-btn-primary:hover:not(:disabled) { transform: none; }
+}
+
+/* ================================================================
+   CHANTIER 1C — UI Candidatures staff (admin /platform)
+   ================================================================ */
+
+/* Badges status — réutilisables */
+.kg-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.kg-badge-amber {
+  background: rgba(232, 163, 61, 0.18);
+  color: var(--amber, #E8A33D);
+  border: 1px solid rgba(232, 163, 61, 0.4);
+}
+.kg-badge-green {
+  background: rgba(61, 220, 132, 0.18);
+  color: var(--green, #3DDC84);
+  border: 1px solid rgba(61, 220, 132, 0.4);
+}
+.kg-badge-red {
+  background: rgba(220, 61, 75, 0.18);
+  color: var(--red, #DC3D4B);
+  border: 1px solid rgba(220, 61, 75, 0.4);
+}
+
+/* Boutons colorés — vert succès / rouge danger */
+.kg-btn-green {
+  background: rgba(61, 220, 132, 0.18);
+  color: var(--green, #3DDC84);
+  border: 1px solid rgba(61, 220, 132, 0.4);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.kg-btn-green:hover {
+  background: rgba(61, 220, 132, 0.32);
+  border-color: var(--green, #3DDC84);
+}
+.kg-btn-red {
+  background: rgba(220, 61, 75, 0.18);
+  color: var(--red, #DC3D4B);
+  border: 1px solid rgba(220, 61, 75, 0.4);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.kg-btn-red:hover {
+  background: rgba(220, 61, 75, 0.32);
+  border-color: var(--red, #DC3D4B);
+}
+
+/* Liste des candidatures staff */
+.kg-staff-apps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.kg-staff-app-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(10, 6, 20, 0.55);
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  border-radius: 12px;
+  border-left: 4px solid var(--kg-violet, #a78bfa);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.kg-staff-app-item[data-status="approved"] {
+  border-left-color: var(--green, #3DDC84);
+  opacity: 0.78;
+}
+.kg-staff-app-item[data-status="rejected"] {
+  border-left-color: var(--red, #DC3D4B);
+  opacity: 0.62;
+}
+.kg-staff-app-item[data-status="pending"] {
+  border-left-color: var(--amber, #E8A33D);
+}
+.kg-staff-app-info {
+  flex: 1;
+  min-width: 0;
+}
+.kg-staff-app-name {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+.kg-staff-app-name strong {
+  color: var(--text1, #f5f5f5);
+}
+.kg-staff-app-email {
+  color: var(--text2, #aaa);
+  font-size: 0.85rem;
+  font-weight: normal;
+}
+.kg-staff-app-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text2, #aaa);
+  margin-bottom: 6px;
+}
+.kg-staff-app-meta span {
+  white-space: nowrap;
+}
+.kg-staff-app-message,
+.kg-staff-app-rejection,
+.kg-staff-app-reviewed {
+  font-size: 0.85rem;
+  color: var(--text2, #aaa);
+  margin-top: 4px;
+  font-style: italic;
+}
+.kg-staff-app-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Modale KG — utilisée pour rejet candidature (textarea). */
+.kg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.kg-modal {
+  background: var(--bg2, #14101F);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 14px;
+  padding: 24px 28px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), var(--kg-glow);
+}
+.kg-modal-title {
+  font-family: var(--font-head, "Oswald", sans-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: var(--text1, #f5f5f5);
+}
+.kg-modal-body {
+  margin: 0 0 14px 0;
+  color: var(--text2, #aaa);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.kg-modal-label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 0.88rem;
+  color: var(--text2, #aaa);
+}
+.kg-modal-textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(10, 6, 20, 0.6);
+  color: var(--text1, #f5f5f5);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.kg-modal-textarea:focus {
+  outline: none;
+  border-color: var(--kg-violet, #a78bfa);
+  box-shadow: var(--focus-ring);
+}
+.kg-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.kg-modal-actions .kg-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(10, 6, 20, 0.6);
+  color: var(--text1, #f5f5f5);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.kg-modal-actions .kg-btn:hover {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: var(--kg-violet, #a78bfa);
+}
+
+/* ================================================================
+   CHANTIER 3 C.1 — Section "Mon compte" sur /client
+   Affiche l'email + bouton rouge de suppression de compte + modale
+   double confirmation (tape SUPPRIMER).
+   Palette : violet KG pour la card d'info, rouge (--red) pour la zone danger.
+   ================================================================ */
+.kg-client-account-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(10, 6, 20, 0.5);
+  border: 1px solid rgba(124, 58, 237, 0.18);
+}
+.kg-client-account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kg-client-account-label {
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text2, rgba(237, 239, 243, 0.7));
+}
+.kg-client-account-value {
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.95rem;
+  color: var(--text, #EDEFF3);
+  word-break: break-all;
+}
+.kg-client-account-danger {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(220, 61, 75, 0.06);
+  border: 1px solid rgba(220, 61, 75, 0.25);
+  border-left: 3px solid var(--red, #DC3D4B);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kg-client-account-danger-title {
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--red, #DC3D4B);
+}
+.kg-client-account-danger-text {
+  margin: 0;
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text2, rgba(237, 239, 243, 0.75));
+}
+
+/* Modale double confirmation — corps custom (input texte + liste). */
+.kg-delete-account-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text2, rgba(237, 239, 243, 0.75));
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.kg-delete-account-confirm p {
+  margin: 0;
+}
+.kg-delete-account-confirm ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kg-delete-account-confirm-label {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text, #EDEFF3);
+}
+.kg-delete-account-confirm-input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 92, 92, 0.3);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text, #EDEFF3);
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  box-sizing: border-box;
+  width: 100%;
+}
+.kg-delete-account-confirm-input:focus {
+  outline: none;
+  border-color: var(--red, #DC3D4B);
+  box-shadow: 0 0 0 2px rgba(220, 61, 75, 0.18);
+}
+.kg-delete-account-confirm-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.kg-delete-account-confirm-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text3, rgba(237, 239, 243, 0.5));
+  font-style: italic;
+}
+
+/* ================================================================
+   CHANTIER 3 C.2 — Section "Comptes en suppression" sur /platform
+   Liste les profils soft-deleted + bouton "Restaurer ce compte".
+   La modale affiche le récap des effets (réutilise ConfirmModal).
+   ================================================================ */
+.kg-restore-account-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text2, rgba(237, 239, 243, 0.75));
+  font-family: var(--font-body, Inter, sans-serif);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.kg-restore-account-body p {
+  margin: 0;
+}
+.kg-restore-account-body ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }

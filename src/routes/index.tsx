@@ -7,9 +7,9 @@ import logo from "@/assets/logo.png";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Kingston GameZone — Plateforme SaaS gaming" },
-      { name: "description", content: "Gérez votre salle de gaming en ligne : caisse, tickets, sessions, statistiques et fidélité. Multi-salles, RBAC, offline-first." },
-      { property: "og:title", content: "Kingston GameZone — SaaS gaming" },
+      { title: "Kingston GameZone — Outil de gestion interne" },
+      { name: "description", content: "Outil de gestion interne pour salles gaming : caisse, tickets, sessions, statistiques et fidélité. Multi-salles, RBAC, offline-first." },
+      { property: "og:title", content: "Kingston GameZone — Outil de gestion interne" },
       { property: "og:description", content: "La caisse et le CRM des salles de gaming d'Afrique." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -114,13 +114,14 @@ function Landing() {
       <main className="kg-landing-main">
         {/* ===== HERO ===== */}
         <section aria-labelledby="kg-hero-title" className="kg-landing-hero">
-          <span className="kg-landing-eyebrow">Plateforme SaaS multi-salles</span>
+          <span className="kg-landing-eyebrow">Kingston GameZone — outil de gestion interne</span>
           <h1 id="kg-hero-title" className="kg-landing-hero-title">
             La caisse gaming pour l&apos;Afrique
           </h1>
           <p className="kg-landing-hero-baseline">
-            Gérez vos postes, tickets, sessions et paiements Mobile Money — même hors
-            connexion. Multi-salles, rôles fins, statistiques temps réel.
+            Une plateforme privée pour gérer vos postes, tickets, sessions et paiements
+            Mobile Money — même hors connexion. Multi-salles, rôles fins, statistiques
+            temps réel.
           </p>
           <div className="kg-landing-hero-ctas">
             <Link to="/auth" className="kg-cta-primary">
@@ -146,7 +147,7 @@ function Landing() {
               { icon: "💳", title: "Mobile Money", body: "Airtel Money, MTN, cash — reconciliations et stats par mode." },
               { icon: "📊", title: "Statistiques", body: "Revenu jour / semaine / mois, top postes, top clients, exports." },
               { icon: "🌐", title: "Offline-first", body: "L'app tourne sans internet ; sync automatique dès la reconnexion." },
-              { icon: "🏢", title: "Multi-salles", body: "Consolidez plusieurs points de vente sous un même compte." },
+              { icon: "🏢", title: "Multi-salles", body: "Architecture pensée pour un parc de salles (back-office unifié)." },
             ].map((c) => (
               <article key={c.title} className="kg-landing-feature-card">
                 <div aria-hidden="true" className="kg-landing-feature-icon">
@@ -166,7 +167,7 @@ function Landing() {
           </h2>
           <ol className="kg-landing-grid kg-landing-steps">
             {[
-              { n: 1, title: "Mise en route", body: "Créez votre salle, invitez vos gérants et configurez vos postes en moins de 10 minutes." },
+              { n: 1, title: "Pour le gérant de salle", body: "Le gérant de salle configure ses postes, ses tarifs et ses modes de paiement depuis le back-office." },
               { n: 2, title: "Au quotidien", body: "Lancez les sessions, encaissez Mobile Money, scannez les tickets — l'app tourne même sans réseau." },
               { n: 3, title: "Pilotage", body: "Suivez vos revenus, vos meilleurs clients et vos heures de pointe depuis n'importe où." },
             ].map((s) => (
@@ -201,7 +202,7 @@ function Landing() {
           KINGSTON <span className="kg-landing-brand-accent">GAMEZONE</span>
         </div>
         <div className="kg-landing-footer-meta">
-          Pointe-Noire · Congo · SaaS gaming multi-salles
+          Pointe-Noire · Congo · Caisse gaming pour l&apos;Afrique
         </div>
       </footer>
     </div>

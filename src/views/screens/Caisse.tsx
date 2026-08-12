@@ -1,5 +1,6 @@
 import { useStore } from '../../store/useStore';
 import { fmtMoney, fmtDuration, todayKey } from '../../lib-app/helpers';
+import { escapeHtml } from '../../lib/utils';
 import { showToast } from '../components/Toast';
 import { EmptyState } from '../components/EmptyState';
 
@@ -19,7 +20,11 @@ export function CaisseView() {
   const todaySessions = sessions.filter(s => s.day === today);
 
   const revenue = todaySessions.reduce((sum, s) => sum + s.amount, 0);
-  const extrasCount = todaySessions.reduce((sum, s) => sum + ((s as any).drinkCount ?? ((s as any).hasDrink ? 1 : 0)), 0);
+  // A5 — code-review 03/08 : fallback défensif sur drinkCount. Le merge()
+  // Zustand garantit maintenant un drinkCount fini (filter validSessions
+  // ligne ~344 de useStore.ts), mais on garde le ?? 0 ici pour absorber
+  // toute source tierce (import manuel, restauration ancienne backup).
+  const extrasCount = todaySessions.reduce((sum, s) => sum + (s.drinkCount ?? 0), 0);
   const extrasRevenue = extrasCount * settings.priceDrink;
   const sessionsCount = todaySessions.length;
   const minutesSold = todaySessions.reduce((sum, s) => sum + s.durationMin, 0);
@@ -51,7 +56,9 @@ export function CaisseView() {
     let csv = 'Heure;Poste;Client;Durée;Boisson;Montant_FCFA\n';
     todaySessions.forEach(s => {
       const time = new Date(s.ts).toLocaleTimeString('fr-FR');
-      const dc = (s as any).drinkCount ?? ((s as any).hasDrink ? 1 : 0);
+      // A5 — code-review 03/08 : fallback défensif sur drinkCount (cf. filter
+      // validSessions dans useStore.ts + ligne 23 ci-dessus).
+      const dc = s.drinkCount ?? 0;
       csv += `${time};${s.posteName};${s.clientName ?? 'Anonyme'};${fmtDuration(s.durationMin)};${dc > 0 ? dc : 'Non'};${s.amount}\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -70,7 +77,7 @@ export function CaisseView() {
 
     const posteRows = posteStats.map(p => `
       <tr>
-        <td>${p.emoji} ${p.name}</td>
+        <td>${p.emoji} ${escapeHtml(p.name)}</td>
         <td>${p.count}</td>
         <td>${p.minutes} min</td>
         <td style="text-align:right;font-weight:700">${fmtMoney(p.revenue)}</td>
@@ -86,10 +93,10 @@ export function CaisseView() {
     const sessionRows = todaySessions.slice().reverse().map(s => `
       <tr>
         <td>${new Date(s.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-        <td>${s.posteName}</td>
-        <td>${s.clientName ?? '—'}</td>
+        <td>${escapeHtml(s.posteName)}</td>
+        <td>${escapeHtml(s.clientName) || '—'}</td>
         <td>${fmtDuration(s.durationMin)}</td>
-        <td>${((s as any).drinkCount ?? ((s as any).hasDrink ? 1 : 0)) > 0 ? `🥤×${(s as any).drinkCount ?? 1}` : '—'}</td>
+        <td>${s.drinkCount > 0 ? `🥤×${s.drinkCount}` : '—'}</td>
         <td style="text-align:right;font-weight:700">${fmtMoney(s.amount)}</td>
       </tr>`).join('');
 
@@ -289,7 +296,7 @@ export function CaisseView() {
                   <td>{s.posteName}</td>
                   <td>{s.clientName ?? <span style={{ color: 'var(--text3)' }}>—</span>}</td>
                   <td>{fmtDuration(s.durationMin)}</td>
-                  <td>{(() => { const dc = (s as any).drinkCount ?? ((s as any).hasDrink ? 1 : 0); return dc > 0 ? `🥤×${dc}` : '—'; })()}</td>
+                  <td>{(() => { const dc = s.drinkCount ?? 0; return dc > 0 ? `🥤×${dc}` : '—'; })()}</td>
                   <td>{s.paymentMethod === 'airtel_money' ? <span className="pm-badge airtel">Airtel</span> : s.paymentMethod === 'mtn_money' ? <span className="pm-badge mtn">MTN</span> : <span className="pm-badge cash">Esp.</span>}</td>
                   <td className="amount">{fmtMoney(s.amount)}</td>
                 </tr>

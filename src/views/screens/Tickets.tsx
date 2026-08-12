@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { renderToString } from 'react-dom/server';
 import { useStore, Ticket, Session, Settings } from '../../store/useStore';
 import { generateTicketCode, TICKET_VALID_MS, isTicketValid, ticketStatus, fmtDate, fmtDateTime, fmtMoney, fmtDuration, fmtMs } from '../../lib-app/helpers';
+import { escapeHtml } from '../../lib/utils';
 import { showToast } from '../components/Toast';
 import { EmptyState } from '../components/EmptyState';
 import { playTicketScan } from '../../lib-app/audio';
@@ -126,11 +127,11 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
   <div class="ticket-body">
     <div class="ticket-code-box">
       <div class="ticket-code-label">Code client</div>
-      <div class="ticket-code">${ticket.code}</div>
+      <div class="ticket-code">${escapeHtml(ticket.code)}</div>
     </div>
     <div class="qr-wrap" aria-label="QR code du ticket">${qrSvg}</div>
     <div class="qr-caption">Scanner pour valider le ticket</div>
-    <div class="info-row"><span class="info-label">Client</span><span class="info-value">${ticket.prenom} ${ticket.nom}</span></div>
+    <div class="info-row"><span class="info-label">Client</span><span class="info-value">${escapeHtml(ticket.prenom)} ${escapeHtml(ticket.nom)}</span></div>
     <div class="info-row"><span class="info-label">Âge</span><span class="info-value">${ticket.age} ans</span></div>
     <div class="info-row"><span class="info-label">Créé le</span><span class="info-value">${fmtDateTime(ticket.dateCreation)}</span></div>
     <div class="info-row"><span class="info-label">Expire le</span><span class="info-value">${fmtDate(ticket.dateExpiration)}</span></div>
@@ -149,7 +150,7 @@ function printTicket(ticket: Ticket, sessions: Session[], settings: Settings) {
       ${ticketSessions.map(s => `
         <div class="session-row">
           <span>${new Date(s.ts).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</span>
-          <span>${s.posteName}</span>
+          <span>${escapeHtml(s.posteName)}</span>
           <span>${fmtDuration(s.durationMin)}</span>
           <span>${fmtMoney(s.amount)}</span>
         </div>
@@ -188,7 +189,15 @@ export function TicketsView() {
   }, []);
 
   const now = Date.now();
-  const validCodes = tickets.filter(t => t.dateExpiration > now).map(t => t.code);
+  // D1 — code-review 2026-08-08 : on exclut aussi les tickets épuisés
+  // (usedSavedTime=true) du pool de codes pris. Sans ça, un ticket marqué
+  // "terminé" retenait son code dans la liste → generateTicketCode rejetait
+  // ce code comme doublon, grossissant inutilement le pool de collisions.
+  // Un ticket terminé ne peut plus être scanné pour reprise, son code est
+  // donc libre pour un nouveau client.
+  const validCodes = tickets
+    .filter(t => t.dateExpiration > now && !t.usedSavedTime)
+    .map(t => t.code);
 
   function handleCreate() {
     const n = nom.trim();

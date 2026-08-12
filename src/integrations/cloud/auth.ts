@@ -1,9 +1,11 @@
 // Wrapper d'auth OAuth — RT.H.2 — bascule vers @supabase/supabase-js natif.
-// Le SDK @lovable.dev/cloud-auth-js ne fonctionne que dans l'environnement
-// de l'éditeur Lovable ; en local/prod il redirige vers un placeholder.
 // On garde la même surface d'API `cloud.auth.signInWithOAuth` pour ne rien
 // casser côté consommateurs (auth.tsx). Le nom "cloud" reste car il décrit
 // le rôle d'orchestrateur d'identité, pas le branding éditeur.
+//
+// ND6 — Fix #6 (03/08/2026) : suppression de `@lovable.dev/cloud-auth-js`
+// du `package.json` (dépendance morte — non importée). Le shim utilise
+// directement `supabase.auth.signInWithOAuth`.
 
 import { supabase } from "../supabase/client";
 

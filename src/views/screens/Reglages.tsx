@@ -33,22 +33,143 @@ export function ReglagesView() {
     showToast('Données exportées', '📦');
   }
 
+  /**
+   * ND8 — Fix #7 (audit 2026-08-03) : validation défensive des imports.
+   * Avant ce fix, n'importe quel JSON avec `settings`/`sessions[]`/`tickets[]`
+   * était accepté — un `amount: "abc"` ou `paymentMethod: "🧨"` cassait
+   * silencieusement l'app (calculs NaN, badges cassés, etc.).
+   * Pas de Zod/Valibot (règle 5), validation explicite inline.
+   */
+
+  const VALID_PAYMENT_METHODS = ['cash', 'airtel_money', 'mtn_money'] as const;
+  const VALID_TICKET_STATUS = ['valid', 'exhausted', 'expired'] as const;
+
+  function isValidSession(s: unknown): s is {
+    id: string;
+    posteId: string;
+    posteName: string;
+    durationMin: number;
+    amount: number;
+    ts: number;
+    day: string;
+    paymentMethod: 'cash' | 'airtel_money' | 'mtn_money';
+    drinkCount: number;
+    clientName?: string | null;
+    ticketId?: string | null;
+    ticketCode?: string | null;
+    minorAuthorised?: boolean;
+    endsAt?: number;
+  } {
+    if (!s || typeof s !== 'object') return false;
+    const o = s as Record<string, unknown>;
+    return (
+      typeof o.id === 'string' &&
+      typeof o.posteId === 'string' &&
+      typeof o.posteName === 'string' &&
+      Number.isFinite(o.durationMin) &&
+      Number.isFinite(o.amount) &&
+      typeof o.ts === 'number' && Number.isFinite(o.ts) &&
+      typeof o.day === 'string' &&
+      typeof o.paymentMethod === 'string' &&
+      (VALID_PAYMENT_METHODS as readonly string[]).includes(o.paymentMethod) &&
+      Number.isFinite(o.drinkCount)
+    );
+  }
+
+  function isValidTicket(t: unknown): t is {
+    id: string;
+    code: string;
+    nom: string;
+    prenom: string;
+    age: number;
+    dateCreation: number;
+    dateExpiration: number;
+    totalAmount: number;
+    usedSavedTime: boolean;
+  } {
+    if (!t || typeof t !== 'object') return false;
+    const o = t as Record<string, unknown>;
+    return (
+      typeof o.id === 'string' &&
+      typeof o.code === 'string' &&
+      typeof o.nom === 'string' &&
+      typeof o.prenom === 'string' &&
+      Number.isFinite(o.age) &&
+      Number.isFinite(o.dateCreation) &&
+      Number.isFinite(o.dateExpiration) &&
+      Number.isFinite(o.totalAmount) &&
+      typeof o.usedSavedTime === 'boolean'
+    );
+  }
+
+  function isValidPoste(p: unknown): p is {
+    id: string;
+    name: string;
+    emoji?: string;
+    status: 'idle' | 'busy';
+    paused?: boolean;
+    remainingMs?: number | null;
+  } {
+    if (!p || typeof p !== 'object') return false;
+    const o = p as Record<string, unknown>;
+    return (
+      typeof o.id === 'string' &&
+      typeof o.name === 'string' &&
+      (o.status === 'idle' || o.status === 'busy')
+    );
+  }
+
   function handleImportFile(file: File) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
-        if (!data.settings || !Array.isArray(data.sessions) || !Array.isArray(data.tickets)) {
-          throw new Error('Format invalide');
-        }
-        if (!window.confirm('Cette action remplacera TOUTES les données actuelles (tickets, sessions, réglages). Continuer ?')) return;
+        if (!data || typeof data !== 'object') throw new Error('Format invalide');
+
+        // Sessions : chaque entrée doit être valide. On filtre les invalides
+        // et on loggue combien ont été rejetées (sécurité > silencieux).
+        const rawSessions = Array.isArray(data.sessions) ? data.sessions : [];
+        const validSessions = rawSessions.filter(isValidSession);
+        const rejectedSessions = rawSessions.length - validSessions.length;
+
+        // Tickets : idem.
+        const rawTickets = Array.isArray(data.tickets) ? data.tickets : [];
+        const validTickets = rawTickets.filter(isValidTicket);
+        const rejectedTickets = rawTickets.length - validTickets.length;
+
+        // Postes : tableau requis et chaque entrée valide.
+        const rawPostes = Array.isArray(data.postes) ? data.postes : [];
+        const validPostes = rawPostes.filter(isValidPoste);
+
+        // Settings : on part de DEFAULT_SETTINGS et on n'autorise que les
+        // champs définis — évite l'injection de clés arbitraires dans le store.
+        const safeSettings: typeof DEFAULT_SETTINGS = {
+          ...DEFAULT_SETTINGS,
+          ...(typeof data.settings === 'object' && data.settings !== null
+            ? Object.fromEntries(
+                Object.entries(data.settings).filter(([k]) => k in DEFAULT_SETTINGS),
+              )
+            : {}),
+        };
+
+        if (!window.confirm(
+          `Cette action remplacera TOUTES les données actuelles (tickets, sessions, réglages).${
+            rejectedSessions + rejectedTickets > 0
+              ? `\n\n⚠️ ${rejectedSessions} session(s) et ${rejectedTickets} ticket(s) invalides seront ignorés.`
+              : ''
+          }\nContinuer ?`
+        )) return;
+
         useStore.setState({
-          settings: { ...DEFAULT_SETTINGS, ...data.settings, customSounds: data.settings?.customSounds ?? {} },
-          postes: Array.isArray(data.postes) ? data.postes : [],
-          sessions: data.sessions,
-          tickets: data.tickets,
+          settings: safeSettings,
+          postes: validPostes,
+          sessions: validSessions,
+          tickets: validTickets,
         });
-        showToast('Données restaurées avec succès', '✅');
+        const warnings = rejectedSessions + rejectedTickets > 0
+          ? ` (${rejectedSessions} session(s) et ${rejectedTickets} ticket(s) invalides ignorés)`
+          : '';
+        showToast(`Données restaurées avec succès${warnings}`, rejectedSessions + rejectedTickets > 0 ? '⚠️' : '✅');
       } catch {
         showToast('Fichier invalide ou corrompu', '❌');
       }

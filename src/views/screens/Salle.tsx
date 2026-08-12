@@ -163,6 +163,12 @@ export function SalleView() {
   function endSession(posteId: string) {
     const p = postes.find(x => x.id === posteId);
     if (!p) return;
+    // D2 — code-review 2026-08-08 : guard anti double-clic. Si l'utilisateur
+    // clique deux fois très vite sur "Terminer", le premier appel passe
+    // p.status à 'idle' puis le second re-calcule remaining/endSession sur
+    // un poste déjà libre. Le re-check ci-dessous court-circuite le second
+    // appel avant qu'il n'écrase un état state stale.
+    if (p.status !== 'busy') return;
     soundTimers.delete(posteId);
     // Save remaining time to the ticket so client can resume later
     if (p.ticketId) {
@@ -393,15 +399,44 @@ export function SalleView() {
         <ExtendModal
           posteId={extendModal.posteId}
           onClose={() => setExtendModal(null)}
-          onConfirm={(extraMin) => {
+          onConfirm={(extraMin, paymentMethod) => {
             const p = postes.find(x => x.id === extendModal.posteId)!;
+            // D.1 — CHANTIER 1D : la prolongation enregistre une Session distincte
+            // (couplage B1 résolu). La Caisse agrège `sessions.reduce(amount)` →
+            // le CA reflète maintenant le montant de la prolongation. Le ticket
+            // lié est mis à jour via `addSession` (useStore.ts:280-289 : incrément
+            // totalMinutesPlayed, totalAmount, sessionIds).
+            const extraPrice = settings.prices[extraMin] ?? Math.round(extraMin * settings.customPricePerMinute);
+            const now2 = Date.now();
+            const dayStr = todayKey();
+            const sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+              ? crypto.randomUUID()
+              : 's' + now2 + '-' + Math.random().toString(36).slice(2, 8);
+            // RT.H.5 — hérité du poste : si la session initiale a été autorisée
+            // pour un mineur, on conserve le flag sur la Session de prolongation.
+            // Cohérent avec SessionModal ligne 383.
+            addSession({
+              id: sessionId,
+              posteId: p.id,
+              posteName: p.name,
+              ts: now2,
+              durationMin: extraMin,
+              drinkCount: 0, // pas de boisson à la prolongation (UX simple)
+              amount: extraPrice,
+              day: dayStr,
+              ticketId: p.ticketId,
+              ticketCode: p.ticketCode,
+              clientName: p.clientName,
+              paymentMethod,
+              minorAuthorised: p.minorAuthorised, // RT.H.5 — propagé depuis le poste
+            });
             if (p.paused) {
               updatePoste(extendModal.posteId, { remainingMs: (p.remainingMs ?? 0) + extraMin * 60 * 1000, durationMin: (p.durationMin ?? 0) + extraMin });
             } else {
               updatePoste(extendModal.posteId, { endsAt: p.endsAt! + extraMin * 60 * 1000, durationMin: (p.durationMin ?? 0) + extraMin });
             }
             soundTimers.delete(extendModal.posteId);
-            showToast(`${p.name} +${extraMin} min`, '⏱️');
+            showToast(`${p.name} +${extraMin} min · ${fmtMoney(extraPrice)}`, '⏱️');
             setExtendModal(null);
           }}
         />
@@ -717,12 +752,18 @@ function SessionModal({ posteId, mode, resumeMs, resumeTicketId, onClose, onConf
 function ExtendModal({ posteId, onClose, onConfirm }: {
   posteId: string;
   onClose: () => void;
-  onConfirm: (min: number) => void;
+  // D.1 — CHANTIER 1D : la prolongation crée une Session distincte (couplage B1).
+  // Le paiement est en agence (cash/airtel/mtn), donc on propage le mode de
+  // paiement choisi via onConfirm pour que le store Zustand incrémente le CA
+  // et le ticket lié.
+  onConfirm: (min: number, paymentMethod: 'cash' | 'airtel_money' | 'mtn_money') => void;
 }) {
   const { postes, settings } = useStore();
   const p = postes.find(x => x.id === posteId)!;
   const [extraMin, setExtraMin] = useState<number | null>(null);
   const [customMin, setCustomMin] = useState('');
+  // D.1 — mode de paiement sélectionné (cohérent SessionModal ligne 467).
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'airtel_money' | 'mtn_money'>('cash');
 
   const now = Date.now();
   const remainingMs = p.paused ? (p.remainingMs ?? 0) : Math.max(0, p.endsAt! - now);
@@ -741,7 +782,7 @@ function ExtendModal({ posteId, onClose, onConfirm }: {
       showToast('Min 30 min sauf si c\'est le reliquat restant', '⚠️', 'var(--amber)');
       return;
     }
-    onConfirm(chosen);
+    onConfirm(chosen, paymentMethod);
   }
 
   return (
@@ -788,6 +829,25 @@ function ExtendModal({ posteId, onClose, onConfirm }: {
         {isUnder30 && !isRemainder && (
           <p className="field-hint" style={{ color: 'var(--red)' }}>⚠️ Minimum 30 min sauf pour le reliquat ticket</p>
         )}
+
+        {/* D.1 — CHANTIER 1D : mode de paiement (cash/airtel/mtn) — cohérent
+            avec SessionModal (ligne 685-697). Prolongation = paiement agence. */}
+        <div className="payment-method-row" style={{ marginTop: 12 }}>
+          <span className="payment-method-label">💳 Mode de paiement</span>
+          <div className="payment-method-btns">
+            {([
+              ['cash', '💵 Espèces'],
+              ['airtel_money', '📱 Airtel'],
+              ['mtn_money', '📱 MTN'],
+            ] as const).map(([val, label]) => (
+              <button
+                key={val}
+                className={`pay-btn ${paymentMethod === val ? 'active' : ''}`}
+                onClick={() => setPaymentMethod(val)}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
 
         {chosen > 0 && (
           <div className="modal-total" style={{ marginTop: 12 }}>

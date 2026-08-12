@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@lovable.dev/cloud-auth-js':
-        specifier: ^1.1.2
-        version: 1.1.2
       '@supabase/supabase-js':
         specifier: ^2.110.8
         version: 2.111.0
@@ -298,9 +295,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@lovable.dev/cloud-auth-js@1.1.2':
-    resolution: {integrity: sha512-xz8ocewsgwkp8giau272/eWWU3XrchCg5uba4yQPPYtevHTXaVU3sD+fO1JjyPBHacVcOcwhmgUiU9TKHt63cg==}
 
   '@lovable.dev/vite-plugin-dev-server-bridge@1.2.1':
     resolution: {integrity: sha512-JdADRwpEJA5t0ggXbd96dND23Wsp69Af9lVSV5m7MnMGxJZlPgqAqz7HUKcfJESfI5M5yFZOl9e0x76JMMDOAg==}
@@ -2475,8 +2469,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@lovable.dev/cloud-auth-js@1.1.2': {}
 
   '@lovable.dev/vite-plugin-dev-server-bridge@1.2.1(vite@8.1.5(@types/node@22.20.1)(jiti@2.7.0))':
     dependencies:

@@ -802,6 +802,8 @@ L'audit contradictoire a mis en évidence qu'une session précédente avait **co
 | 30/07/2026 | **RT.B.10a â€"
 [Omitted long matching line]
 
+> [!NOTE] **Piste — perte RT.B.8 / RT.B.9 / RT.B.10a (consigné le 12/08/2026)** : les lignes 798, 800 et 802 sont tronquées (fins de ligne mojibake `â€"` = tiret cadratin U+2014 mal décodé) et leurs corps remplacés par le placeholder `[Omitted long matching line]` (lignes 799, 801, 803), déjà présent dans les commits `3195ce0` et `8b417fe`. **Hypothèse de travail** : il s'agit d'un **artefact de troncature d'affichage terminal**, pas d'une corruption d'encodage classique — une session antérieure a recopié sa propre sortie tronquée dans le fichier au lieu du contenu réel (ligne d'origine trop longue pour l'affichage, coupée par le terminal, puis collée en l'état). Cohérent avec le fait que le reste du texte environnant est encodé proprement. **Non bloquant** : piste à explorer uniquement si le contenu réel de ces 3 entrées devient nécessaire (p. ex. retrouver la sortie source dans un log de session antérieure). Aucun temps alloué à ce stade.
+
 ---
 
 ## 📋 Section 03/08/2026 — Audit global + corrections + ouverture CHANTIER 1

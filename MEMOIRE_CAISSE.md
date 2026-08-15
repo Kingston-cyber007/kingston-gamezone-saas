@@ -103,6 +103,7 @@ Ce fichier est mis à jour **après chaque étape validée par Yannick**, jamais
 | RLS 11/08 | Durcissement RLS `tenants` — blocage 42501 anon (3 migrations : restrict anon columns, guard défensif, policies `TO authenticated`) | ✅ Constaté sur disque (push DB externe requis) | 11/08/2026 |
 | CH.2 | CHANTIER 2 — Réservation en ligne + paiement CinetPay (RPC compute_reservation_price, payments, idempotency_keys, enum 'carte', edge function create-payment-intent) | 🟡 En cours (migration + edge function codés, push DB/deploy edge externes requis) | 12/08/2026 |
 | DEPLOY 15/08 | Déploiement edge functions + constat DB à jour — audit pré-push du 15/08 : **les 15 migrations sont déjà appliquées en remote** (`supabase migration list` Local == Remote pour toutes, y compris chantier 2) ; 3 edge functions déjà déployées (check-email-jetable, delete-own-account, restore-account-admin, v1) mais antérieures au dernier commit les touchant ; `create-payment-intent` absente. Actions exécutées : config.toml +7 lignes (section `[functions.create-payment-intent] verify_jwt = true`), deploy des 4 fonctions (3 → v2, create-payment-intent → v1). Secrets CinetPay (`CINETPAY_API_KEY`, `CINETPAY_SITE_ID`) toujours manquants — AE-1 en attente de Yannick. Dépendance ouverte : `cinetpay-webhook` (B.2) référencé par `notify_url` mais non codé → notifications CinetPay inertes tant que B.2 n'est pas implémentée. Git : 20 commits non poussés sur `origin/main`. | ✅ Validée (deploys exécutés) | 15/08/2026 |
+| B.2 | CHANTIER 2 B.2 — **Edge function `cinetpay-webhook`** (webhook de notification CinetPay → synchronisation `payments` + `reservations`). Public `verify_jwt=false`, sécurité HMAC `x-token` (concaténation des 16 champs officiels) + rappel `/v2/payment/check` + recoupement montant + idempotence. Vérifié contre doc officielle CinetPay (EN+FR) : le champ body `signature` (distinct du `x-token` header) fait bien partie des 16 champs concaténés. Deployée en **v1** (15/08 22:32 UTC), GET → 200, POST → 503 (secrets AE-1 absents, comportement attendu). Tests live : HMAC validé hors-ligne (SHA-256 hex), tsc exit 0, vite build exit 0. Commit `1fad9d7` poussé. **Reste** : secrets `CINETPAY_API_KEY` + `CINETPAY_SITE_ID` + `CINETPAY_SECRET_KEY` (AE-1, à fournir par Yannick) pour un test de bout en bout réel. | ✅ Déployée (v1) — fonctionnelle dès secrets AE-1 fournis | 15/08/2026 |
 
 Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloquée (voir journal)
 
@@ -110,7 +111,7 @@ Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloqué
 
 ## 2. ÉTAT ACTUEL DU PROJET (résumé rapide, toujours à jour)
 
-**Mise à jour :** 15/08/2026 — section réconciliée avec le working tree après avoir comblé le trou de gouvernance (03/08 → 12/08 non committé).
+**Mise à jour :** 15/08/2026 — section réconciliée avec le working tree après avoir comblé le trou de gouvernance (03/08 → 12/08 non committé) ; ajout de l'étape B.2 (cinetpay-webhook déployée) le 15/08.
 
 **Dernière validation référencée :** A.4 / A.5b (session 02/08). **Depuis :** session 03/08→12/08 (fix ND1-ND11, CHANTIERS 1/2/3, durcissement RLS) **codée sur disque mais non committée** — découverte au ré-audit du 12/08. **WORKING TREE PROPRE** à partir du commit de cette session (tsc exit 0, vite build exit 0).
 
@@ -124,9 +125,9 @@ Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloqué
 **Actions externes en attente (côté Yannick)** :
 1. Rotation `SUPABASE_SERVICE_ROLE_KEY` côté Supabase Dashboard (règle 7, dette #1) — **toujours à faire**
 2. ~~`supabase db push` des migrations non appliquées en remote~~ — **CONSTAT 15/08 : les 15 migrations sont toutes appliquées en remote** (Local == Remote, `supabase migration list`)
-3. ~~`supabase functions deploy`~~ — **FAIT le 15/08** : les 4 fonctions sont déployées (create-payment-intent v1, les 3 autres v2). **Reste** : `supabase secrets set CINETPAY_API_KEY=... CINETPAY_SITE_ID=...` (AE-1, credentials sandbox à fournir) pour que `create-payment-intent` fonctionne
-4. `git push` (les 20 commits de cette session devant `origin/main`)
-5. **Dépendance B.2** : `cinetpay-webhook` (référencé par `notify_url` de create-payment-intent) non codé → les notifications CinetPay sont inertes tant que B.2 n'est pas implémentée et déployée
+3. ~~`supabase functions deploy`~~ — **FAIT le 15/08** : les 5 fonctions sont déployées (create-payment-intent v1, cinetpay-webhook v1, les 3 autres v2). **Reste** : `supabase secrets set CINETPAY_API_KEY=... CINETPAY_SITE_ID=... CINETPAY_SECRET_KEY=...` (AE-1, credentials sandbox à fournir) pour que `create-payment-intent` ET `cinetpay-webhook` fonctionnent
+4. `git push` (les commits de cette session devant `origin/main`)
+5. ~~**Dépendance B.2** : `cinetpay-webhook` non codé → notifications CinetPay inertes~~ — **FERMÉ le 15/08** : `supabase/functions/cinetpay-webhook/index.ts` écrit, config.toml `verify_jwt=false`, déployée v1, commit `1fad9d7` poussé. Testée : GET 200, POST → 503 tant que les secrets AE-1 ne sont pas injectés. Point `signature` vs `x-token` vérifié contre la doc officielle CinetPay (HMAC) : `signature` est un champ distinct du corps POST, inclus dans les 16 champs concaténés ; `x-token` est le HMAC reçu en header — pas de confusion.
 
 **Deux dépôts coexistent à ce stade :**
 
@@ -143,7 +144,7 @@ Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloqué
 - TanStack Start + React 19 + Supabase (Auth + Postgres + RLS) + Zustand + Tailwind 4. **Package manager : pnpm** (packageManager `pnpm@9`, `pnpm-lock.yaml`, node_modules layout pnpm).
 - Routes : `/` (landing), `/auth`, `/_authenticated/{app,client,platform}`.
 - **15 migrations SQL** (juillet→12/08) : setup initial, RLS de base, durcissement SECURITY DEFINER, platform_admins, view profiles, chantier 1 fondations, suppression de compte, FKs profiles, seed fixtures, durcissement anon tenants, chantier 2 paiement.
-- **4 edge functions Deno** : `check-email-jetable`, `delete-own-account`, `restore-account-admin`, `create-payment-intent`.
+- **5 edge functions Deno** : `check-email-jetable`, `delete-own-account`, `restore-account-admin`, `create-payment-intent`, `cinetpay-webhook`.
 - Schéma client `types.ts` régénéré (14 tables, enum `payment_method` étendu avec `carte`).
 - `.env` gitignoré (vérifié). Le `useStore` local (Zustand `kg_caisse_v3`) est la couche caisse offline ; les routes Supabase portent l'auth/RBAC.
 - PWA : favicons/icônes 192/512 + manifest complété.
@@ -923,3 +924,48 @@ Cette section consigne les travaux du 03/08/2026 : audit global du projet (5 age
 - **`packageManager: "pnpm@9"`** dans package.json non résolu en version exacte (pnpm local 11.8.0) ? warning pnpm. À corriger (`pnpm@9.x.x` ou `corepack use`).
 - **Anciennes entrées du tableau** (A.2b.7) décrivent `package-lock.json` comme lockfile officiel — obsolète depuis la bascule pnpm du 03/08.
 - La section 03/08 du journal référence `[[chantier1-statut]]` / `[[chantier1-couplages]]` — wiki-liens sans cible, à remplacer par le dossier `memory/` si créé.
+
+---
+
+### B.2 — CHANTIER 2 : Edge Function `cinetpay-webhook` (webhook de notification CinetPay)
+**Date de validation :** 15/08/2026
+**Statut :** ✅ Déployée (v1) et fonctionnelle dès injection des secrets AE-1. Pas de validation de bout en bout réelle possible tant que Yannick n'a pas fourni les 3 secrets CinetPay (sandbox).
+
+**Fichiers créés / modifiés :**
+- `supabase/functions/cinetpay-webhook/index.ts` : **créé** (344 lignes) — edge function Deno publique (`verify_jwt = false`)
+- `supabase/config.toml` : **+9 lignes** — section `[functions.cinetpay-webhook] verify_jwt = false` + commentaire CHANTIER 2 B.2
+- `MEMOIRE_CAISSE.md` : tableau de suivi (ligne B.2) + section 2 (points 3/5 actions externes, 5 edge functions) + présent journal
+
+**Ce qui a été fait concrètement :**
+- Implémentation complète du webhook conforme au plan B.2 validé :
+  1. GET/OPTIONS → 200 (ping CinetPay obligatoire, doc : l'URL doit répondre 200 en GET ET POST)
+  2. POST parse `application/x-www-form-urlencoded` (format CinetPay, pas JSON)
+  3. HMAC : concaténation des **16 champs dans l'ordre officiel** (`cpm_site_id, cpm_trans_id, cpm_trans_date, cpm_amount, cpm_currency, signature, payment_method, cel_phone_num, cpm_phone_prefixe, cpm_language, cpm_version, cpm_payment_config, cpm_page_action, cpm_custom, cpm_designation, cpm_error_message`) → HMAC-SHA256 hex lowercase avec `CINETPAY_SECRET_KEY`, comparaison à temps constant (`timingSafeEqual`) contre le header `x-token`. 401 si échec, 503 si secret manquant.
+  4. Lookup `payments` par `transaction_id` (`.maybeSingle()`). Transaction inconnue → 200 (anti-retry CinetPay).
+  5. Idempotence : `payments.status = 'success'` déjà → 200 sans réécriture (CinetPay rappelle).
+  6. Recoupement montant (règle non-négociable #5) : `cpm_amount` doit matcher `payments.amount`, sinon 400.
+  7. Rappel API `/v2/payment/check` (`api-checkout.cinetpay.com`) avec `{apikey, site_id, transaction_id}` — source de vérité du statut (le webhook ne transporte JAMAIS le statut).
+  8. Mise à jour service_role : `payments.status` (`success`/`failed`) + `payments.metadata` (`cinetpay_check`, `cinetpay_status`, `notified_at`) + `reservations.statut` (`confirmee`/`annulee`) + `reservations.montant_paye`/`transaction_id`.
+
+**Point vérifié à la demande de Yannick (champ `signature` vs `x-token`) :**
+- Confirmé contre la doc officielle CinetPay (`/api/1.0-fr/checkout/hmac` et `/api/1.0-en/checkout/hmac`) : le corps du POST contient bien un champ **`signature` distinct** (« un token. Il est différent du token généré » / « A token. It is different from the generated token »). Ce champ est inclus dans les 16 champs concaténés pour le HMAC (doc : « Le token est constitué par concaténation des informations reçues dans le corps de la requête » + schéma des 16 champs + `$data = $cpm_site_id . ... . $signature . ...`).
+- Le **`x-token`** est, lui, le résultat du HMAC-SHA256 (clé secrète marchand) envoyé **séparément dans le header HTTP** : « un token HMAC pour permettre une vérification du côté du partenaire » → vérifié par `hash_equals($received_token, $generated_token)` avec `$received_token = $_SERVER["HTTP_X_TOKEN"]`.
+- **Pas de confusion dans notre implémentation** : on lit `params.get("signature")` (corps) pour le calcul, et `req.headers.get("x-token")` (header) pour la comparaison. Les deux concepts sont bien distincts.
+
+**Vérifications brutes :**
+- ✅ HMAC hors-ligne reproduit avec Node `crypto` (HMAC-SHA256 hex 64 chars, identique à la logique Deno Web Crypto)
+- ✅ `npx tsc --noEmit` exit 0 (checkpoint projet)
+- ✅ `npx vite build` exit 0 (checkpoint projet)
+- ✅ `supabase functions deploy cinetpay-webhook` → ACTIVE v1 (15/08 22:32 UTC)
+- ✅ Test live GET `https://ybqsfyufnpmhlhdtwkon.supabase.co/functions/v1/cinetpay-webhook` → **200 "ok"**
+- ✅ Test live POST (payload form) → **503** `{"error":"CinetPay non configuré. AE-1 manquant : CINETPAY_SECRET_KEY."}` — comportement attendu, secrets non injectés
+- ✅ `supabase functions list` → 5 fonctions ACTIVE
+- ✅ Commit `1fad9d7` `feat(edge): cinetpay-webhook B.2 - reception notification CinetPay + sync payments/reservations` poussé sur `origin/main` (working tree propre)
+
+**Écarts par rapport au plan initial :** aucun. Conforme au plan B.2 validé par Yannick (points 1 à 8).
+
+**Points de vigilance pour la suite :**
+- **Blocage AE-1** : la fonction répond 503 tant que les 3 secrets ne sont pas injectés — `supabase secrets set CINETPAY_API_KEY=... CINETPAY_SITE_ID=... CINETPAY_SECRET_KEY=...`. À fournir par Yannick (sandbox pour test).
+- **`CINETPAY_SECRET_KEY` est un secret NOUVEAU** ajouté par B.2 (clé HMAC marchand) — pas encore listé dans les AE-1 du DEPLOY 15/08.
+- Test de bout en bout réel (payment → webhook → vérif DB) à faire dès secrets injectés.
+- Le dossier `memory/` cité dans les headers (dont `memory/chantier2-reservation-paiement.md`) reste absent sur disque — les décisions sont consignées dans les commentaires de `index.ts` et ce journal.

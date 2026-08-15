@@ -22,3 +22,10 @@ verify_jwt = true
 #   - restore_deleted_profile(target) atomique SQL + auth.users.
 [functions.restore-account-admin]
 verify_jwt = true
+
+# CHANTIER 2 B.1 — Edge Function création de payment intent CinetPay.
+# JWT REQUIRED (verify_jwt = true) : on lit auth.uid() depuis le JWT caller
+# pour créer la réservation et l'idempotency key au nom de l'utilisateur.
+# Montant JAMAIS lu du client (recalculé serveur via compute_reservation_price).
+[functions.create-payment-intent]
+verify_jwt = true

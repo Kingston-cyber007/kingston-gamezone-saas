@@ -102,6 +102,7 @@ Ce fichier est mis à jour **après chaque étape validée par Yannick**, jamais
 | CH.3 | CHANTIER 3 — Suppression de compte soft-delete 30j + restauration admin (migration + 2 edge functions + DoubleConfirmModal) | 🟡 En cours (code + migrations prêts, push DB/deploy edge externes requis) | 08→10/08/2026 |
 | RLS 11/08 | Durcissement RLS `tenants` — blocage 42501 anon (3 migrations : restrict anon columns, guard défensif, policies `TO authenticated`) | ✅ Constaté sur disque (push DB externe requis) | 11/08/2026 |
 | CH.2 | CHANTIER 2 — Réservation en ligne + paiement CinetPay (RPC compute_reservation_price, payments, idempotency_keys, enum 'carte', edge function create-payment-intent) | 🟡 En cours (migration + edge function codés, push DB/deploy edge externes requis) | 12/08/2026 |
+| DEPLOY 15/08 | Déploiement edge functions + constat DB à jour — audit pré-push du 15/08 : **les 15 migrations sont déjà appliquées en remote** (`supabase migration list` Local == Remote pour toutes, y compris chantier 2) ; 3 edge functions déjà déployées (check-email-jetable, delete-own-account, restore-account-admin, v1) mais antérieures au dernier commit les touchant ; `create-payment-intent` absente. Actions exécutées : config.toml +7 lignes (section `[functions.create-payment-intent] verify_jwt = true`), deploy des 4 fonctions (3 → v2, create-payment-intent → v1). Secrets CinetPay (`CINETPAY_API_KEY`, `CINETPAY_SITE_ID`) toujours manquants — AE-1 en attente de Yannick. Dépendance ouverte : `cinetpay-webhook` (B.2) référencé par `notify_url` mais non codé → notifications CinetPay inertes tant que B.2 n'est pas implémentée. Git : 20 commits non poussés sur `origin/main`. | ✅ Validée (deploys exécutés) | 15/08/2026 |
 
 Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloquée (voir journal)
 
@@ -109,7 +110,7 @@ Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloqué
 
 ## 2. ÉTAT ACTUEL DU PROJET (résumé rapide, toujours à jour)
 
-**Mise à jour :** 12/08/2026 — section réconciliée avec le working tree après avoir comblé le trou de gouvernance (03/08 → 12/08 non committé).
+**Mise à jour :** 15/08/2026 — section réconciliée avec le working tree après avoir comblé le trou de gouvernance (03/08 → 12/08 non committé).
 
 **Dernière validation référencée :** A.4 / A.5b (session 02/08). **Depuis :** session 03/08→12/08 (fix ND1-ND11, CHANTIERS 1/2/3, durcissement RLS) **codée sur disque mais non committée** — découverte au ré-audit du 12/08. **WORKING TREE PROPRE** à partir du commit de cette session (tsc exit 0, vite build exit 0).
 
@@ -122,9 +123,10 @@ Légende : ⬜ Non commencée · 🟡 En cours · ✅ Validée · ⚠️ Bloqué
 
 **Actions externes en attente (côté Yannick)** :
 1. Rotation `SUPABASE_SERVICE_ROLE_KEY` côté Supabase Dashboard (règle 7, dette #1) — **toujours à faire**
-2. `supabase db push` des migrations non appliquées en remote (chantier 1, delete_own_account, FKs, seed, restrict anon, chantier 2)
-3. `supabase functions deploy` (check-email-jetable, delete-own-account, restore-account-admin, create-payment-intent) — `verify_jwt` configuré dans `config.toml`
-4. `git push` (les commits de cette session + les 11 du 02/08 devant `origin/main`)
+2. ~~`supabase db push` des migrations non appliquées en remote~~ — **CONSTAT 15/08 : les 15 migrations sont toutes appliquées en remote** (Local == Remote, `supabase migration list`)
+3. ~~`supabase functions deploy`~~ — **FAIT le 15/08** : les 4 fonctions sont déployées (create-payment-intent v1, les 3 autres v2). **Reste** : `supabase secrets set CINETPAY_API_KEY=... CINETPAY_SITE_ID=...` (AE-1, credentials sandbox à fournir) pour que `create-payment-intent` fonctionne
+4. `git push` (les 20 commits de cette session devant `origin/main`)
+5. **Dépendance B.2** : `cinetpay-webhook` (référencé par `notify_url` de create-payment-intent) non codé → les notifications CinetPay sont inertes tant que B.2 n'est pas implémentée et déployée
 
 **Deux dépôts coexistent à ce stade :**
 

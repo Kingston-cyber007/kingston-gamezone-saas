@@ -29,3 +29,10 @@ verify_jwt = true
 # Montant JAMAIS lu du client (recalculé serveur via compute_reservation_price).
 [functions.create-payment-intent]
 verify_jwt = true
+
+# CHANTIER 2 B.2 — Edge Function webhook de notification CinetPay.
+# PUBLIC (verify_jwt = false) : CinetPay appelle cette URL sans JWT.
+# Sécurité portée par le HMAC x-token (clé secrète marchand) + rappel
+# de l'API /v2/payment/check pour récupérer le vrai statut de transaction.
+[functions.cinetpay-webhook]
+verify_jwt = false

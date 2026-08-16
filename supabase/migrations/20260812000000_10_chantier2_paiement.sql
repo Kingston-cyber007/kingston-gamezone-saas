@@ -295,18 +295,15 @@ CREATE TRIGGER trg_reservations_check_overlap
   EXECUTE FUNCTION public.check_reservation_overlap();
 
 -- Index GiST sur tstzrange pour accélérer la détection d'overlap.
--- DÉSACTIVÉ 2026-08-12 (2e push échoue au statement 28 — cause exacte
--- non encore identifiée, probablement immutabilité de l'expression
--- tstzrange ou conflit avec un index existant). Le trigger fonctionne
--- déjà en O(n) par poste, ce qui est acceptable tant que la table
--- reste petite (peu de réservations actives en même temps par poste).
--- Sera réintroduit dans une migration dédiée après diagnostic du vrai
--- message d'erreur Postgres (à demander à Yannick).
--- CREATE EXTENSION IF NOT EXISTS btree_gist;
--- CREATE INDEX IF NOT EXISTS idx_reservations_poste_range
---   ON public.reservations
---   USING GIST (tstzrange(date_heure, date_heure + (duree_min || ' minutes')::interval, '[)'))
---   WHERE statut IN ('en_attente', 'confirmee');
+-- DÉSACTIVÉ 2026-08-12 (2e push échouait au statement 28 =
+-- `CREATE EXTENSION IF NOT EXISTS btree_gist`). Diagnostic 2026-08-16 :
+-- vraie erreur de contrainte Postgres — l'expression
+-- `(duree_min || ' minutes')::interval` n'est PAS IMMUTABLE (textcat +
+-- cast text->interval = STABLE) → `ERROR: functions in index expression
+-- must be marked IMMUTABLE`, sur n'importe quel serveur. Même sans
+-- l'extension, ce CREATE INDEX aurait échoué.
+-- RÉACTIVÉ avec correctif (make_interval, IMMUTABLE) dans la migration
+-- dédiée `20260816000000_11_reactiver_index_gist_reservations.sql`.
 
 
 -- ================================================================
@@ -324,7 +321,8 @@ CREATE TRIGGER trg_reservations_check_overlap
 --   A.3 : Table payments + 4 index + RLS (lecture seule pour authenticated)
 --   A.4 : CHECK reservations_duree_min_check étendu à >= 30
 --   A.5 : Function check_reservation_overlap() + trigger
---         (index GiST différé — O(n) acceptable tant que la table reste petite)
+--         (index GiST réactivé avec correctif IMMUTABLE — voir migration
+--         20260816000000_11_reactiver_index_gist_reservations.sql)
 --
 -- Push Supabase : `supabase db push` par Yannick (action externe AE-2).
 -- Rollback si besoin : DROP TABLE payments, idempotency_keys, DROP FUNCTION

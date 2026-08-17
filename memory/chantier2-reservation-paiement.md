@@ -126,22 +126,19 @@
 
 ## Points d'attention
 
-- **Index GiST** sur `tstzrange` — **DIAGNOSTIQUÉ 16/08 : erreur RÉELLE, pas
-  environnementale.** L'expression `(duree_min || ' minutes')::interval` n'est
-  PAS IMMUTABLE (`textcat` + cast text→interval = STABLE) → Postgres refuse tout
-  index d'expression non-immutable, sur n'importe quel serveur. Erreur exacte :
-  `ERROR: functions in index expression must be marked IMMUTABLE`. Le 2e push
-  s'arrêtait au statement 28 = `CREATE EXTENSION IF NOT EXISTS btree_gist`
-  (côté Supabase) mais, même passé, le statement 29 (CREATE INDEX) aurait échoué
-  sur cette erreur. **Correctif prévu** : `date_heure + make_interval(mins =>
-  duree_min)` (IMMUTABLE) + suppression du `CREATE EXTENSION btree_gist`
-  (inutile : tstzrange dispose d'une opclass GiST native). À réintroduire dans
-  une migration dédiée.
+- **Index GiST** sur `tstzrange` — **DÉPLOYÉ 17/08/2026** via wrapper
+  `make_reservation_range()` (PL/pgSQL IMMUTABLE). L'expression directe
+  `tstzrange(date_heure, date_heure + make_interval(...), '[)')` échouait en
+  `CREATE INDEX` avec `42P17: functions in index expression must be marked
+  IMMUTABLE` — Postgres ré-analyse le corps des fonctions `LANGUAGE sql` et
+  rejette des expressions qu'il juge non-immutables (même si les opérateurs
+  le sont). Les fonctions `LANGUAGE plpgsql` ne sont PAS inlinées → Postgres
+  fait confiance à la déclaration `IMMUTABLE`. La fonction wrapper résout le
+  problème. Migration : `20260817100000_18_progressive_index_test.sql`.
+  Nettoyage artefacts debug (table `_debug_gist`, index `idx_test_gist_simple`) :
+  `20260817110000_19_cleanup_debug_artifacts.sql`.
 - **Post-push à vérifier** : l'enum `payment_method` inclut bien 'carte'.
 - **AE-1 bloquant** : credentials CinetPay non injectés (webhooks → 503).
-- **2e push migration chantier 2** : s'est arrêté au statement 28
-  (`CREATE EXTENSION btree_gist`) — cause documentée ci-dessus (index GiST).
-  À confirmer l'état réel du projet distant (`supabase migration list`).
 
 ## ⚠️ À compléter (Yannick)
 

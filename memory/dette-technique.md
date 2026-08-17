@@ -32,6 +32,7 @@
 | #24 | `tenant_settings` jamais consommée par l'UI | RT.P.0-tenantcfg — section « Réglages par salle » /platform | 31/07/2026 |
 | #27 | Jointures PostgREST non typables (FK vers auth.users hors scan) | FKs explicites vers `profiles(id)` ON DELETE RESTRICT (20260810000000 + 20260810000001) | 10/08/2026 |
 | #30 | Fixtures RTE legacy sans profil (orphelins) | Seed `20260810133905` + la FK de #27 a rempli son rôle (signal structurel) | 10/08/2026 |
+| GiST | Index GiST `idx_reservations_poste_range` désactivé | Wrapper `make_reservation_range()` PL/pgSQL IMMUTABLE (`20260817100000_18`) | 17/08/2026 |
 
 ## Autres dettes documentées (sources diverses)
 
@@ -42,8 +43,9 @@
   migre que les `color:` texte).
 - **`@lovable.dev/cloud-auth-js`** : dépendance devenue inutilisée après RT.H.2
   (OAuth Supabase natif) — laissée pour éviter divergence package.json/node_modules.
-- **Index GiST** `idx_reservations_poste_range` désactivé (2e push chantier 2
-  échouait) — à réintroduire dans une migration dédiée après diagnostic.
+- ~~**Index GiST** `idx_reservations_poste_range` désactivé~~ — **DÉPLOYÉ 17/08**
+  via wrapper `make_reservation_range()` PL/pgSQL IMMUTABLE
+  (`20260817100000_18`). Dette fermée.
 - **`packageManager: "pnpm@9"`** non résolu en version exacte (pnpm local
   11.8.0) → warning pnpm. À corriger (`pnpm@9.x.x` ou `corepack use`).
 - **`--kg-violet` #7c3aed 3.36:1** : acceptable pour accents, sous AA pour
